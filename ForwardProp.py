@@ -24,8 +24,10 @@ def conv_(img, conv_filter):
     filter_size = conv_filter.shape[1]
     result = numpy.zeros((img.shape))
     #Looping through the image to apply the convolution operation.
+    # iterate row
     for r in numpy.uint16(numpy.arange(filter_size/2.0, 
                           img.shape[0]-filter_size/2.0+1)):
+        # iterate column
         for c in numpy.uint16(numpy.arange(filter_size/2.0, 
                                            img.shape[1]-filter_size/2.0+1)):
             """

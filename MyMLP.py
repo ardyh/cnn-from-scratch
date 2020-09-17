@@ -10,7 +10,7 @@ from PIL import Image
 # Update Ardy: 13/09/2020
 # Masih Implementasi MLP buat tugas ML
 # Using Batch Stochastic Gradient Descent
-
+# Baru add method process_image() buat dapet image dan process jadi np.array
 class CNN:
     # constructor
     def __init__(self, n_inputs, n_hidden, n_outputs=3, bias=1, learning_rate=0.1):
