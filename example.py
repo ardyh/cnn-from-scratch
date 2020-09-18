@@ -40,13 +40,16 @@ l1_filter[1, :, :] = numpy.array([[[1,   1,  1],
                                    [0,   0,  0], 
                                    [-1, -1, -1]]])
 
-
-print("\n**Working with conv layer 1**")
-l1_feature_map = numpycnn.conv(img, l1_filter)
-
+# DEBUG
+# try input image with 3 channels
+print(numpycnn.load_and_pad_input("images/sandbox/cat.38.jpg"))
+# DEBUG END
 # DEBUG
 raise Exception
 # DEBUG END
+
+print("\n**Working with conv layer 1**")
+l1_feature_map = numpycnn.conv(img, l1_filter)
 
 print("\n**ReLU**")
 l1_feature_map_relu = numpycnn.relu(l1_feature_map)

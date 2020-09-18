@@ -1,6 +1,7 @@
-import numpy
+import numpy as np
 import sys
 import math
+from PIL import Image
 
 """
 Convolutional neural network implementation using NumPy.
@@ -20,31 +21,51 @@ For more info., contact me:
     ahmed.fawzy@ci.menofia.edu.eg
 """
 
+def load_and_pad_input(image_path, padding=2, padded_number=0):
+    raw_img = Image.open(image_path, 'r')
+    mat_img = np.transpose(list(raw_img.getdata())) \
+                .reshape(3, raw_img.size[0], raw_img.size[1])
+
+    return pad_matrix(mat_img, padding, padded_number)
+
+def pad_matrix(mat_img, padding, padded_number):
+    def pad_with(vector, pad_width, iaxis, kwargs):
+        pad_value = kwargs.get('padder', padded_number)
+        vector[:pad_width[0]] = pad_value
+        vector[-pad_width[1]:] = pad_value
+
+    return np.pad(
+        mat_img, 
+        ((0, 0), (padding, padding), (padding, padding)), 
+        pad_with, 
+        padder=padded_number
+    )
+
 def conv_(img, conv_filter):
     filter_size = conv_filter.shape[1]
-    result = numpy.zeros((img.shape))
+    result = np.zeros((img.shape))
     #Looping through the image to apply the convolution operation.
     # iterate row
-    for r in numpy.uint16(numpy.arange(filter_size/2.0, 
+    for r in np.uint16(np.arange(filter_size/2.0, 
                           img.shape[0]-filter_size/2.0+1)):
         # iterate column
-        for c in numpy.uint16(numpy.arange(filter_size/2.0, 
+        for c in np.uint16(np.arange(filter_size/2.0, 
                                            img.shape[1]-filter_size/2.0+1)):
             """
             Getting the current region to get multiplied with the filter.
             How to loop through the image and get the region based on 
             the image and filer sizes is the most tricky part of convolution.
             """
-            curr_region = img[r-numpy.uint16(numpy.floor(filter_size/2.0)):r+numpy.uint16(numpy.ceil(filter_size/2.0)), 
-                              c-numpy.uint16(numpy.floor(filter_size/2.0)):c+numpy.uint16(numpy.ceil(filter_size/2.0))]
+            curr_region = img[r-np.uint16(np.floor(filter_size/2.0)):r+np.uint16(np.ceil(filter_size/2.0)), 
+                              c-np.uint16(np.floor(filter_size/2.0)):c+np.uint16(np.ceil(filter_size/2.0))]
             #Element-wise multipliplication between the current region and the filter.
             curr_result = curr_region * conv_filter
-            conv_sum = numpy.sum(curr_result) #Summing the result of multiplication.
+            conv_sum = np.sum(curr_result) #Summing the result of multiplication.
             result[r, c] = conv_sum #Saving the summation in the convolution layer feature map.
             
     #Clipping the outliers of the result matrix.
-    final_result = result[numpy.uint16(filter_size/2.0):result.shape[0]-numpy.uint16(filter_size/2.0), 
-                          numpy.uint16(filter_size/2.0):result.shape[1]-numpy.uint16(filter_size/2.0)]
+    final_result = result[np.uint16(filter_size/2.0):result.shape[0]-np.uint16(filter_size/2.0), 
+                          np.uint16(filter_size/2.0):result.shape[1]-np.uint16(filter_size/2.0)]
     return final_result
 def conv(img, conv_filter):
 
@@ -63,7 +84,7 @@ def conv(img, conv_filter):
         sys.exit()
 
     # An empty feature map to hold the output of convolving the filter(s) with the image.
-    feature_maps = numpy.zeros((img.shape[0]-conv_filter.shape[1]+1, 
+    feature_maps = np.zeros((img.shape[0]-conv_filter.shape[1]+1, 
                                 img.shape[1]-conv_filter.shape[1]+1, 
                                 conv_filter.shape[0]))
 
@@ -89,29 +110,29 @@ def conv(img, conv_filter):
 
 def pooling(feature_map, mode='max', size=2, stride=2):
     #Preparing the output of the pooling operation.
-    pool_out = numpy.zeros((numpy.uint16((feature_map.shape[0]-size+1)/stride+1),
-                            numpy.uint16((feature_map.shape[1]-size+1)/stride+1),
+    pool_out = np.zeros((np.uint16((feature_map.shape[0]-size+1)/stride+1),
+                            np.uint16((feature_map.shape[1]-size+1)/stride+1),
                             feature_map.shape[-1]))
     for map_num in range(feature_map.shape[-1]):
         r2 = 0
-        for r in numpy.arange(0,feature_map.shape[0]-size+1, stride):
+        for r in np.arange(0,feature_map.shape[0]-size+1, stride):
             c2 = 0
-            for c in numpy.arange(0, feature_map.shape[1]-size+1, stride):
+            for c in np.arange(0, feature_map.shape[1]-size+1, stride):
                 if(mode=='max'):
-                    pool_out[r2, c2, map_num] = numpy.max([feature_map[r:r+size,  c:c+size, map_num]])
+                    pool_out[r2, c2, map_num] = np.max([feature_map[r:r+size,  c:c+size, map_num]])
                 else:
-                    pool_out[r2, c2, map_num] = numpy.mean([feature_map[r:r+size,  c:c+size, map_num]])
+                    pool_out[r2, c2, map_num] = np.mean([feature_map[r:r+size,  c:c+size, map_num]])
                 c2 = c2 + 1
             r2 = r2 +1
     return pool_out
 
 def relu(feature_map):
     #Preparing the output of the ReLU activation function.
-    relu_out = numpy.zeros(feature_map.shape)
+    relu_out = np.zeros(feature_map.shape)
     for map_num in range(feature_map.shape[-1]):
-        for r in numpy.arange(0,feature_map.shape[0]):
-            for c in numpy.arange(0, feature_map.shape[1]):
-                relu_out[r, c, map_num] = numpy.max([feature_map[r, c, map_num], 0])
+        for r in np.arange(0,feature_map.shape[0]):
+            for c in np.arange(0, feature_map.shape[1]):
+                relu_out[r, c, map_num] = np.max([feature_map[r, c, map_num], 0])
     return relu_out
 
 def sigmoid(net: float) -> float:
