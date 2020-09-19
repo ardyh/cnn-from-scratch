@@ -20,11 +20,11 @@ img = numpycnn.load_image("images/sandbox/cat.38.jpg")
 #Convoluting the image
 
 print("\n**Working with conv layer**")
-l1_feature_map = numpycnn.conv(img, 2, 3, 2, 0, stride = 2)
+l1_feature_map = numpycnn.conv(img, 2, 3, 2, 2, 0, 2) # (input_matrix, filter_number, filter_size_length, filter_size_width, pad_layer, padded_number, stride=1):
 print("\n**ReLU**")
 l1_feature_map_relu = numpycnn.relu(l1_feature_map)
 print("\n**Pooling**")
-l1_feature_map_relu_pool = numpycnn.pooling(l1_feature_map_relu, 2, 2)
+l1_feature_map_relu_pool = numpycnn.pool(l1_feature_map_relu, 2, 2, 2)
 print("**End of conv layer**\n")
 
 l1_flat = numpycnn.flatten(l1_feature_map_relu_pool)

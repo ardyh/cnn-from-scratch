@@ -27,10 +27,10 @@ def padding(input_matrix, pad_layer=2, padded_number=0):
 
     return padded_result
 
-def conv_calculation(input_matrix, conv_filter, stride=1):
+def conv_calculation(input_matrix, conv_filter, pad_layer, padded_number, stride=1):
     #input_matrix shape = (mxn)
-    output_shape = (((input_matrix.shape[0] - conv_filter.shape[0]) // stride + 1),
-                    ((input_matrix.shape[1] - conv_filter.shape[1]) // stride + 1))
+    output_shape = (((input_matrix.shape[0] - conv_filter.shape[0] + 2 * pad_layer) // stride + 1),
+                    ((input_matrix.shape[1] - conv_filter.shape[1] + 2 * pad_layer) // stride + 1))
 
     output_matrix = np.zeros(output_shape)
 
@@ -96,17 +96,16 @@ def conv(input_matrix, filter_number, filter_size_length, filter_size_width, pad
         curr_filter = conv_filter[filter_num, :] # getting a filter from the bank.
 
         if len(curr_filter.shape) > 2:
-            conv_map = conv_calculation(input_matrix[:, :, 0], curr_filter[:, :, 0], stride) # Array holding the sum of all feature maps.
+            conv_map = conv_calculation(input_matrix[:, :, 0], curr_filter[:, :, 0], pad_layer, padded_number, stride) # Array holding the sum of all feature maps.
             for ch_num in range(1, curr_filter.shape[-1]): # Convolving each channel with the image and summing the results.
-                conv_map = conv_map + conv_calculation(input_matrix[:, :, ch_num], curr_filter[:, :, ch_num], stride)
+                conv_map = conv_map + conv_calculation(input_matrix[:, :, ch_num], curr_filter[:, :, ch_num], pad_layer, padded_number, stride)
         else: # There is just a single channel in the filter.
-            conv_map = conv_calculation(input_matrix, curr_filter)
+            conv_map = conv_calculation(input_matrix, curr_filter, pad_layer, padded_number, stride)
         
-        print(conv_map.shape)
         feature_maps[:, :, filter_num] = conv_map + list_bias[filter_num] # Holding feature map with the current filter.
     return feature_maps # Returning all feature maps.
 
-def pool(input_matrix, pool_length, pool_width, stride, mode):
+def pool(input_matrix, pool_length, pool_width, stride, mode='max'):
     result_shape = (((input_matrix.shape[0] - pool_length) // stride + 1),
                     ((input_matrix.shape[1] - pool_width) // stride + 1),
                     input_matrix.shape[-1])
