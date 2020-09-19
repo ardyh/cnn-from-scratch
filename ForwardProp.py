@@ -42,16 +42,16 @@ For more info., contact me:
 #         padder=padded_number
 #     )
 
-def load_and_pad_input2(image_path, padding = 2, padded_number=0):
+def load_and_pad_input2(image_path, padding=2, padded_number=0):
     raw_img = skimage.io.imread(image_path)
     if (len(raw_img.shape) > 2):
-        img = np.zeros((raw_img.shape[0]+padding*2,raw_img.shape[1]+padding*2,raw_img.shape[2]))
+        img = np.zeros((raw_img.shape[0]+padding*2, raw_img.shape[1]+padding*2, raw_img.shape[2]))
         for i in range(raw_img.shape[-1]):
             current_channel = raw_img[:, :, i]
-            padded_current_channel = np.pad(current_channel,padding, mode = 'constant', constant_values = padded_number)
-            img[:,:,i] = padded_current_channel
+            padded_current_channel = np.pad(current_channel, padding, mode='constant', constant_values=padded_number)
+            img[:, :, i] = padded_current_channel
     else:
-        img = np.pad(raw_img, padding, mode = 'constant', constant_values = padded_number)
+        img = np.pad(raw_img, padding, mode='constant', constant_values=padded_number)
 
     return img
 
