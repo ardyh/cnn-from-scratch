@@ -117,7 +117,7 @@ def pool(input_matrix, pool_length, pool_width, stride, mode):
         #input_matrix shape = (mxn)
         region = input_matrix[:,:,channel]
         output_shape = (((region.shape[0] - pool_length) // stride + 1),
-                        ((region.shape[1] - pool_width) // stridedef pool(input_matrix, pool_length, pool_width, stride, mode):
+                        ((region.shape[1] - pool_width) // stride + 1))
     #input_matrix shape = (mxn)
     output_shape = (((input_matrix.shape[0] - pool_length) // stride + 1),
                     ((input_matrix.shape[1] - pool_width) // stride + 1))
