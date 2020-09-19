@@ -149,5 +149,26 @@ def relu(feature_map):
                 relu_out[r, c, map_num] = np.max([feature_map[r, c, map_num], 0])
     return relu_out
 
-def sigmoid(net: float) -> float:
-    return 1 / (1 + math.exp(-net))
+def sigmoid(net):
+    return 1 / (1 + np.exp(-net))
+
+# dense
+# Params:
+#   - dense_input: 1-D array of float, flattened conv result
+def dense(dense_input, class_num, activation_func="sigmoid"):
+    # create matrix of size (dense_input.size, class_num)
+    input_size = dense_input.size
+    flattened_input = dense_input.reshape(input_size)
+    weights = np.random.uniform(-1, 1, (input_size, class_num))
+    output = np.zeros(class_num)
+
+    for w in range(input_size):
+        for c in range(class_num):
+            output[c] += flattened_input[w] * weights[w][c] 
+
+    if(activation_func=="sigmoid"):
+        vectorized_activation = np.vectorize(sigmoid)
+    if(activation_func=="relu"):
+        vectorized_activation = np.vectorize(relu)
+
+    return vectorized_activation(output)
