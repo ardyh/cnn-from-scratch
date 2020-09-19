@@ -118,36 +118,10 @@ def pool(input_matrix, pool_length, pool_width, stride, mode):
         region = input_matrix[:,:,channel]
         output_shape = (((region.shape[0] - pool_length) // stride + 1),
                         ((region.shape[1] - pool_width) // stride + 1))
-    #input_matrix shape = (mxn)
-    output_shape = (((input_matrix.shape[0] - pool_length) // stride + 1),
-                    ((input_matrix.shape[1] - pool_width) // stride + 1))
-
-    output_matrix = np.zeros(output_shape)
-
-    input_length_idx = 0; output_length_idx = 0
-    while(input_length_idx < input_matrix.shape[0] - pool_length + 1):
         
-        input_width_idx = 0; output_width_idx = 0
-        while(input_width_idx < input_matrix.shape[1] - pool_width + 1):
-            curr_region = input_matrix[input_length_idx : (input_length_idx + pool_length),
-                                       input_width_idx : (input_width_idx + pool_width)]
-            print(curr_region)
+        output_matrix = np.zeros(output_shape)
 
-            if mode == 'max':
-                curr_result = np.max(curr_region)
-            else:
-                curr_result = np.mean(curr_region)
-            
-            output_matrix[output_length_idx, output_width_idx] = curr_result
-
-            input_width_idx += stride
-            output_width_idx +=  1
-        #End while
-        input_length_idx += stride
-        output_length_idx += 1
-    #End while
-
-    return output_matrix
+        input_length_idx = 0; output_length_idx = 0
         while(input_length_idx < region.shape[0] - pool_length + 1):
 
             input_width_idx = 0; output_width_idx = 0
