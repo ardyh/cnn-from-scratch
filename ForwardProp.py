@@ -1,26 +1,8 @@
-import numpy as np
+import np as np
 import skimage.io
 import sys
 import math
 from PIL import Image
-
-"""
-Convolutional neural network implementation using NumPy.
-An article describing this project is titled "Building Convolutional Neural Network using NumPy from Scratch". It is available in these links: https://www.linkedin.com/pulse/building-convolutional-neural-network-using-numpy-from-ahmed-gad/
-https://www.kdnuggets.com/2018/04/building-convolutional-neural-network-numpy-scratch.html
-It is also translated into Chinese: http://m.aliyun.com/yunqi/articles/585741
-
-The project is tested using Python 3.5.2 installed inside Anaconda 4.2.0 (64-bit)
-NumPy version used is 1.14.0
-
-For more info., contact me:
-    Ahmed Fawzy Gad
-    KDnuggets: https://www.kdnuggets.com/author/ahmed-gad
-    LinkedIn: https://www.linkedin.com/in/ahmedfgad
-    Facebook: https://www.facebook.com/ahmed.f.gadd
-    ahmed.f.gad@gmail.com
-    ahmed.fawzy@ci.menofia.edu.eg
-"""
 
 # def load_and_pad_input(image_path, padding=2, padded_number=0):
 #     raw_img = Image.open(image_path, 'r')
@@ -42,82 +24,108 @@ For more info., contact me:
 #         padder=padded_number
 #     )
 
-def load_and_pad_input2(image_path, padding = 2, padded_number=0):
+def load_image(image_path):
     raw_img = skimage.io.imread(image_path)
-    if (len(raw_img.shape) > 2):
-        img = np.zeros((raw_img.shape[0]+padding*2,raw_img.shape[1]+padding*2,raw_img.shape[2]))
-        for i in range(raw_img.shape[-1]):
-            current_channel = raw_img[:, :, i]
-            padded_current_channel = np.pad(current_channel,padding, mode = 'constant', constant_values = padded_number)
-            img[:,:,i] = padded_current_channel
+    return raw_img
+
+"""
+padding()
+Params:
+    - image_path: string; path to image relative to current directory
+    - pad_layer: int; number of padding layers
+    - padded_number: numeric; the number to be padded
+"""
+def padding(input_matrix, pad_layer=2, padded_number=0):
+    if (len(input_matrix.shape) > 2):
+        padded_result = np.zeros((input_matrix.shape[0]+pad_layer*2, input_matrix.shape[1]+pad_layer*2, input_matrix.shape[2]))
+        for i in range(input_matrix.shape[-1]):
+            current_channel = input_matrix[:, :, i]
+            padded_current_channel = np.pad(current_channel, pad_layer, mode='constant', constant_values=padded_number)
+            padded_result[:, :, i] = padded_current_channel
     else:
-        img = np.pad(raw_img, padding, mode = 'constant', constant_values = padded_number)
+        padded_result = np.pad(input_matrix, pad_layer, mode='constant', constant_values=padded_number)
 
-    return img
+    return padded_result
 
-def conv_(img, conv_filter):
+def conv_(input_matrix, conv_filter, stride):
     filter_size = conv_filter.shape[1]
-    result = np.zeros((img.shape))
+    result = np.zeros((input_matrix.shape))
     #Looping through the image to apply the convolution operation.
     # iterate row
-    for r in np.uint16(np.arange(filter_size/2.0, 
-                          img.shape[0]-filter_size/2.0+1)):
+    for r in np.uint16(np.arange(
+        filter_size/2.0, 
+        input_matrix.shape[0]-filter_size/2.0+1,
+        stride
+        )):
         # iterate column
-        for c in np.uint16(np.arange(filter_size/2.0, 
-                                           img.shape[1]-filter_size/2.0+1)):
-            """
-            Getting the current region to get multiplied with the filter.
-            How to loop through the image and get the region based on 
-            the image and filer sizes is the most tricky part of convolution.
-            """
-            curr_region = img[r-np.uint16(np.floor(filter_size/2.0)):r+np.uint16(np.ceil(filter_size/2.0)), 
-                              c-np.uint16(np.floor(filter_size/2.0)):c+np.uint16(np.ceil(filter_size/2.0))]
-            #Element-wise multipliplication between the current region and the filter.
+        for ci n np.uint16(np.arange(
+            filter_size/2.0, 
+            input_matrix.shape[1]-filter_size/2.0+1,
+            stride
+            )):
+            curr_region = input_matrix[r-np.uint16(np.floor(filter_size/2.0)):r+np.uint16(np.ceil(filter_size/2.0)), 
+                            c-np.uint16(np.floor(filter_size/2.0)):c+np.uint16(np.ceil(filter_size/2.0))]
+
             curr_result = curr_region * conv_filter
-            conv_sum = np.sum(curr_result) #Summing the result of multiplication.
-            result[r, c] = conv_sum #Saving the summation in the convolution layer feature map.
+            conv_sum = np.sum(curr_result)
+            result[r, c] = conv_sum
             
     #Clipping the outliers of the result matrix.
     final_result = result[np.uint16(filter_size/2.0):result.shape[0]-np.uint16(filter_size/2.0), 
-                          np.uint16(filter_size/2.0):result.shape[1]-np.uint16(filter_size/2.0)]
+                        np.uint16(filter_size/2.0):result.shape[1]-np.uint16(filter_size/2.0)]
+    
     return final_result
-def conv(img, conv_filter):
 
-    if len(img.shape) != len(conv_filter.shape) - 1: # Check whether number of dimensions is the same
-        print("Error: Number of dimensions in conv filter and image do not match.")  
-        exit()
-    if len(img.shape) > 2 or len(conv_filter.shape) > 3: # Check if number of image channels matches the filter depth.
-        if img.shape[-1] != conv_filter.shape[-1]:
-            print("Error: Number of channels in both image and filter must match.")
-            sys.exit()
-    if conv_filter.shape[1] != conv_filter.shape[2]: # Check if filter dimensions are equal.
-        print('Error: Filter must be a square matrix. I.e. number of rows and columns must match.')
-        sys.exit()
-    if conv_filter.shape[1]%2==0: # Check if filter diemnsions are odd.
-        print('Error: Filter must have an odd size. I.e. number of rows and columns must be odd.')
-        sys.exit()
+def init_filter(filter_number, filter_size, input_dim, input_channel):
+    #Initialize Convulation Filter
+    if (input_dim > 2):
+        filter_channel = input_channel
+        conv_filter = np.zeros((filter_number, filter_size, filter_size, filter_channel))
+        for i in range(filter_number):
+            conv_filter[i, :, :, :] = np.random.uniform(low=-0.1, high=0.1, size=(filter_size, filter_size, filter_channel))
+    else:
+        conv_filter = np.zeros((filter_number, filter_size, filter_size))
+        for i in range(filter_number):
+            conv_filter[i, :, :] = np.random.uniform(low=-0.1, high=0.1, size=(filter_size, filter_size))
+    
+    return conv_filter
+    
+def conv(input_matrix, filter_number, filter_size, pad_layer, padded_number, stride):
+
+    #Apply padding
+    input_matrix = padding(input_matrix, pad_layer, padded_number)
+
+    #Initialize Convulation Filter
+    conv_filter = init_filter(filter_number, filter_size, len(input_matrix.shape), input_matrix.shape[-1])
+    # if (len(input_matrix.shape) > 2):
+    #     filter_channel = input_matrix.shape[-1]
+    #     conv_filter = np.zeros((filter_number, filter_size, filter_size, filter_channel))
+    #     for i in range(filter_number):
+    #         conv_filter[i, :, :, :] = np.random.uniform(low=-0.1, high=0.1, size=(filter_size, filter_size, filter_channel))
+    # else:
+    #     conv_filter = np.zeros((filter_number, filter_size, filter_size))
+        # for i in range(filter_number):
+        #     conv_filter[i, :, :] = np.random.uniform(low=-0.1, high=0.1, size=(filter_size, filter_size))
 
     # An empty feature map to hold the output of convolving the filter(s) with the image.
-    feature_maps = np.zeros((img.shape[0]-conv_filter.shape[1]+1, 
-                                img.shape[1]-conv_filter.shape[1]+1, 
+    # feature_maps_size = (W -F + 2P) / S + 1 
+    feature_maps = np.zeros((input_matrix.shape[0]-conv_filter.shape[1]+1, 
+                                input_matrix.shape[1]-conv_filter.shape[1]+1, 
                                 conv_filter.shape[0]))
+
 
     # Convolving the image by the filter(s).
     for filter_num in range(conv_filter.shape[0]):
         print("Filter ", filter_num + 1)
         curr_filter = conv_filter[filter_num, :] # getting a filter from the bank.
-        """ 
-        Checking if there are mutliple channels for the single filter.
-        If so, then each channel will convolve the image.
-        The result of all convolutions are summed to return a single feature map.
-        """
+
         if len(curr_filter.shape) > 2:
-            conv_map = conv_(img[:, :, 0], curr_filter[:, :, 0]) # Array holding the sum of all feature maps.
+            conv_map = conv_(input_matrix[:, :, 0], curr_filter[:, :, 0]) # Array holding the sum of all feature maps.
             for ch_num in range(1, curr_filter.shape[-1]): # Convolving each channel with the image and summing the results.
-                conv_map = conv_map + conv_(img[:, :, ch_num], 
+                conv_map = conv_map + conv_(input_matrix[:, :, ch_num], 
                                   curr_filter[:, :, ch_num])
         else: # There is just a single channel in the filter.
-            conv_map = conv_(img, curr_filter)
+            conv_map = conv_(input_matrix, curr_filter)
         feature_maps[:, :, filter_num] = conv_map # Holding feature map with the current filter.
     return feature_maps # Returning all feature maps.
     
@@ -149,5 +157,31 @@ def relu(feature_map):
                 relu_out[r, c, map_num] = np.max([feature_map[r, c, map_num], 0])
     return relu_out
 
-def sigmoid(net: float) -> float:
-    return 1 / (1 + math.exp(-net))
+def flatten(output_layer):
+    flatten_result = np.ravel(output_layer)
+    return flatten_result
+
+def dense(dense_input, class_num, activation_func="sigmoid"):
+    def sigmoid_dense(net: float) -> float:
+        return 1 / (1 + math.exp(-net))
+
+    def relu_dense(x):
+        return 0 if (x < 0) else x
+
+    # create matrix of size (dense_input.size, class_num)
+    input_size = dense_input.size
+    flattened_input = dense_input.reshape(input_size)
+    weights = np.random.uniform(-1, 1, (input_size, class_num))
+    output = np.zeros(class_num)
+
+    for w in range(input_size):
+        for c in range(class_num):
+            output[c] += flattened_input[w] * weights[w][c] 
+
+    # activation function defaults to sigmoid
+    if(activation_func=="relu"):
+        vectorized_activation = np.vectorize(relu_dense)
+    else:
+        vectorized_activation = np.vectorize(sigmoid_dense)
+
+    return vectorized_activation(output)

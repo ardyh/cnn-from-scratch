@@ -15,39 +15,27 @@ import ForwardProp as numpycnn
 # First conv layer
 #l1_filter = numpy.random.rand(2,7,7)*20 # Preparing the filters randomly.
 
-l1_filter_number = int(input("Number of filter = "))
-l1_filter_size = int(input("Filter size = "))
-l1_pool_size = int(input("Pool size = "))
-l1_pool_stride = int(input("Pooling stride = "))
-l1_padding = int(input("Padding = "))
+l1_dense_unit = int(input("Number of dense layer unit = "))
+l1_dense_activation = input("Dense layer activation function : ")
 
-img = numpycnn.load_and_pad_input2("images/sandbox/cat.38.jpg", l1_padding)
-
-if (len(img.shape) > 2):
-    l1_filter_channel = img.shape[-1]
-    l1_filter = numpy.zeros((l1_filter_number,l1_filter_size,l1_filter_size,l1_filter_channel))
-    for i in range(l1_filter_number):
-        l1_filter[i, :, :, :] = numpy.random.rand(1,l1_filter_size,l1_filter_size,l1_filter_channel)
-else:
-    l1_filter = numpy.zeros((l1_filter_number,l1_filter_size,l1_filter_size))
-    for i in range(l1_filter_number):
-        l1_filter[i, :, :] = numpy.random.rand(1,l1_filter_size,l1_filter_size)
-
+img = numpycnn.load_image("images/sandbox/cat.38.jpg")
 
 #Convoluting the image
 
-print("\n**Working with conv layer 1**")
+print("\n**Working with conv layer**")
 l1_feature_map = numpycnn.conv(img, l1_filter)
 print("\n**ReLU**")
 l1_feature_map_relu = numpycnn.relu(l1_feature_map)
 print("\n**Pooling**")
-l1_feature_map_relu_pool = numpycnn.pooling(l1_feature_map_relu, l1_pool_size, l1_pool_size)
-print("**End of conv layer 1**\n")
+l1_feature_map_relu_pool = numpycnn.pooling(l1_feature_map_relu, 2, 2)
+print("**End of conv layer**\n")
 
+l1_flat = numpycnn.flatten(l1_feature_map_relu_pool)
+l1_dense_output = numpycnn.dense(l1_flat, 10, "sigmoid")
+
+print(""l1_dense_output)
 
 # Layer 1
-
-
 fig1, ax1 = matplotlib.pyplot.subplots(nrows=3, ncols = l1_feature_map.shape[2])
 
 for i in range(l1_feature_map.shape[2]):
