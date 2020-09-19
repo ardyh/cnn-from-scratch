@@ -125,11 +125,7 @@ def conv(input_matrix, filter_number, filter_size, pad_layer, padded_number, str
     for filter_num in range(conv_filter.shape[0]):
         print("Filter ", filter_num + 1)
         curr_filter = conv_filter[filter_num, :] # getting a filter from the bank.
-        """ 
-        Checking if there are mutliple channels for the single filter.
-        If so, then each channel will convolve the image.
-        The result of all convolutions are summed to return a single feature map.
-        """
+
         if len(curr_filter.shape) > 2:
             conv_map = conv_(input_matrix[:, :, 0], curr_filter[:, :, 0], stride) # Array holding the sum of all feature maps.
             for ch_num in range(1, curr_filter.shape[-1]): # Convolving each channel with the image and summing the results.

@@ -1,7 +1,7 @@
 import numpy as np
 
 class Input:
-    def __init__(self, input_shape)
+    def __init__(self, input_shape):
         self.input_size = input_shape
         self.layer_output_size = input_shape
 
@@ -29,7 +29,7 @@ class Detector_Stage:
         self.layer_input_size = self.previous_layer.layer_output_size
         self.layer_output_size = self.previous_layer.layer_output_size
 
-    def relu_process(self, layer_input)
+    def relu_process(self, layer_input):
         self.layer_output = np.zeros(self.layer_output_size)
         for layer_idx in range(self.layer_input.shape[-1]):
             for r in np.arange(0,self.layer_input.shape[0]):
