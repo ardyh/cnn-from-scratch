@@ -72,16 +72,16 @@ def init_filter(filter_number, filter_size_length, filter_size_width, input_shap
     
     return convolution_filter
     
-def convolution_stage(input_matrix, filter_number, filter_size_length, filter_size_width, pad_layer=0, padded_number=0, stride=1):
+def convolution_stage(input_matrix, filter_number, filter_size_length, filter_size_width, padding_layer=0, padded_number=0, stride=1):
     #Stage Validation
     if (len(input_matrix) < 2):
         raise Exception("Invalid input matrix")
     
-    if (filter_number <= 0 or filter_size_length <= 0 or filter_size_width <= 0 or stride <= 0 or pad_layer < 0) :
+    if (filter_number <= 0 or filter_size_length <= 0 or filter_size_width <= 0 or stride <= 0 or padding_layer < 0) :
         raise Exception("Error input parameter")
     
     #Apply padding
-    input_matrix = add_padding(input_matrix, pad_layer, padded_number)
+    input_matrix = add_padding(input_matrix, padding_layer, padded_number)
 
     #Initialize Convulation Filter
     conv_filter = init_filter(filter_number, filter_size_length, filter_size_width, input_matrix.shape)
@@ -90,8 +90,8 @@ def convolution_stage(input_matrix, filter_number, filter_size_length, filter_si
     list_bias = np.zeros(conv_filter.shape[0])
 
     #Feature map formula : (W - F + 2P) / S + 1
-    feature_map_shape = (((input_matrix.shape[0] - conv_filter.shape[1] + 2 * pad_layer) // stride + 1),
-                          ((input_matrix.shape[1] - conv_filter.shape[2] + 2 * pad_layer) // stride + 1),
+    feature_map_shape = (((input_matrix.shape[0] - conv_filter.shape[1] + 2 * padding_layer) // stride + 1),
+                          ((input_matrix.shape[1] - conv_filter.shape[2] + 2 * padding_layer) // stride + 1),
                           filter_number)
     
     # Initialize feature map output
@@ -101,11 +101,11 @@ def convolution_stage(input_matrix, filter_number, filter_size_length, filter_si
         current_filter = conv_filter[filter_num, :]
 
         if len(current_filter.shape) > 2:
-            convolution_result = convolution_calculation(input_matrix[:, :, 0], current_filter[:, :, 0], pad_layer, stride)
+            convolution_result = convolution_calculation(input_matrix[:, :, 0], current_filter[:, :, 0], padding_layer, stride)
             for channel in range(1, current_filter.shape[-1]):
-                convolution_result = convolution_result + convolution_calculation(input_matrix[:, :, channel], current_filter[:, :, channel], pad_layer, stride)
+                convolution_result = convolution_result + convolution_calculation(input_matrix[:, :, channel], current_filter[:, :, channel], padding_layer, stride)
         else:
-            convolution_result = convolution_calculation(input_matrix, current_filter, pad_layer, stride)
+            convolution_result = convolution_calculation(input_matrix, current_filter, padding_layer, stride)
         
         feature_map[:, :, filter_num] = convolution_result + list_bias[filter_num]
     return feature_map
