@@ -165,9 +165,7 @@ def sigmoid(net):
     return 1. / (1. + np.exp(-net))
 
 def relu(net):
-    if(net < 0):
-        return 0
-    return net
+    return 0 if (net < 0) else net
 
 def activation(input_matrix, function_name="relu"):
     # activation function defaults to relu
