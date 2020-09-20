@@ -74,7 +74,7 @@ def init_filter(filter_number, filter_size_length, filter_size_width, input_shap
     
 def convolution_stage(input_matrix, filter_number, filter_size_length, filter_size_width, padding_layer=0, padded_number=0, stride=1):
     #Stage Validation
-    if (len(input_matrix) < 2):
+    if (len(input_matrix.shape) < 2):
         raise Exception("Invalid input matrix")
     
     if (filter_number <= 0 or filter_size_length <= 0 or filter_size_width <= 0 or stride <= 0 or padding_layer < 0) :
@@ -112,7 +112,7 @@ def convolution_stage(input_matrix, filter_number, filter_size_length, filter_si
 
 def pool_stage(input_matrix, pool_length, pool_width, stride=2, mode='max'):
     # Stage Validation
-    if (len(input_matrix) < 2):
+    if (len(input_matrix.shape) < 2):
         raise Exception("Invalid input matrix")
     
     if (pool_length <= 0 or pool_width <= 0 or stride <= 0):
