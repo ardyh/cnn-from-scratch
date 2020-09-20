@@ -10,19 +10,19 @@ BASE_IMG_DIR = "images/sandbox/"
 img = numpycnn.load_image(f"{BASE_IMG_DIR}cat.38.jpg")
 
 #Convoluting the image
-print("\n**Working with conv layer**")
+print("**Convolution Layer Start**")
+print("**Convolution Stage**")
 l1_feature_map = numpycnn.convolution_stage(img, 2, 3, 2, 2, 0, 2) # (input_matrix, filter_number, filter_size_length, filter_size_width, pad_layer, padded_number, stride=1):
-print("\n**ReLU**")
+print("**Detector Stage**")
 l1_feature_map_relu = numpycnn.activation(l1_feature_map)
-print("\n**Pooling**")
+print("**Pooling Stage**")
 l1_feature_map_relu_pool = numpycnn.pool_stage(l1_feature_map_relu, 2, 2, 2)
-print("**End of conv layer**\n")
+print("**End of Convolution Layer**\n")
 
 print("**Dense layer**")
 l1_flat = numpycnn.flatten(l1_feature_map_relu_pool)
-l1_dense_output = numpycnn.dense(l1_flat, 10, "sigmoid")
-
-print("\n**Dense output**")
+l1_dense_output = numpycnn.dense(l1_flat, 10, "relu")
+print("**Dense output**")
 print(l1_dense_output)
 
 # Showing the image output of each layer

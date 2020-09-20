@@ -58,17 +58,21 @@ def convolution_calculation(input_matrix, conv_filter, padding_layer, stride):
     return output_matrix
 
 def init_filter(filter_number, filter_size_length, filter_size_width, input_shape):
+    # set the lower and upper bound of randomized parameters to be intialized in filter
+    LOWER_BOUND = -10
+    UPPER_BOUND = 10
+
     #Initialize Convulation Filter / Kernel
     if (len(input_shape) > 2):
         filter_channel = input_shape[-1]
 
         convolution_filter = np.zeros((filter_number, filter_size_length, filter_size_width, filter_channel))
         for i in range(filter_number):
-            convolution_filter[i, :, :, :] = np.random.uniform(low=0.1, high=0.5, size=(filter_size_length, filter_size_width, filter_channel))
+            convolution_filter[i, :, :, :] = np.random.uniform(low=LOWER_BOUND, high=UPPER_BOUND, size=(filter_size_length, filter_size_width, filter_channel))
     else:
         convolution_filter = np.zeros((filter_number, filter_size_length, filter_size_width))
         for i in range(filter_number):
-            convolution_filter[i, :, :] = np.random.uniform(low=0.1, high=0.5, size=(filter_size_length, filter_size_width))
+            convolution_filter[i, :, :] = np.random.uniform(low=LOWER_BOUND, high=UPPER_BOUND, size=(filter_size_length, filter_size_width))
     
     return convolution_filter
     
