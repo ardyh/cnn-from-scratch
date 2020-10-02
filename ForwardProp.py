@@ -91,7 +91,7 @@ def convolution_stage(input_matrix, filter_number, filter_size_length, filter_si
     conv_filter = init_filter(filter_number, filter_size_length, filter_size_width, input_matrix.shape)
 
     #Initialize bias with 0
-    list_bias = np.zeros(conv_filter.shape[0])
+    list_bias = np.random.uniform(-1, 1, conv_filter.shape[0])
 
     #Feature map formula : (W - F + 2P) / S + 1
     feature_map_shape = (((input_matrix.shape[0] - conv_filter.shape[1] + 2 * padding_layer) // stride + 1),
