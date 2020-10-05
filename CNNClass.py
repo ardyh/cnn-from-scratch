@@ -5,6 +5,11 @@ class Sequential:
     def __init__(self, input):
         self.input = input
         self.layers = [] 
+        # DEBUG
+        self.conv_layer_final_idx = 3
+        self.feature_layer_output = []
+        # DEBUG END
+        self.final_output = []
 
     def add(self, layer):
         self.layers.append(layer)
@@ -20,6 +25,13 @@ class Sequential:
                 
             layer.run()
             prev_output = layer.output
+
+            # DEBUG
+            if idx < self.conv_layer_final_idx:
+                self.feature_layer_output.append(layer.output)
+            # DEBUG END
+        
+        self.final_output = prev_output
 
     def train(self, X, y, epochs=50):
         # iterate every epoch
@@ -42,6 +54,7 @@ class Conv2D:
     def __init__(self, filter_number, filter_size_length, filter_size_width, padding_layer=0, padded_number=0, stride=1):
         self.input = []
         self.output = []
+        
         self.filter_number = filter_number
         self.filter_size_length = filter_size_length
         self.filter_size_width = filter_size_width
@@ -195,8 +208,8 @@ class Activation:
         return None
 
 # Pooling Layer
-class MaxPooling:
-    def __init__(self, input_matrix, pool_length, pool_width, stride=2, mode='max'):
+class Pooling:
+    def __init__(self, pool_length, pool_width, stride=2, mode='max'):
         self.input = []
         self.output = []
         self.pool_length = pool_length 
@@ -269,7 +282,7 @@ class Flatten:
         self.input = []
         self.output = []
 
-    def run(self, output_layer):
+    def run(self):
         output_layer = self.input
         self.output = np.ravel(output_layer)
         return None
