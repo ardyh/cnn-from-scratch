@@ -15,11 +15,11 @@ class Sequential:
         self.layers.append(layer)
         return None
 
-    def forwardprop(self):
-        prev_output = []
+    def forwardprop(self, X_instance):
+        prev_output = [] 
         for idx, layer in enumerate(self.layers):
             if idx == 0:
-                layer.input = self.input
+                layer.input = X_instance
             else:
                 layer.input = prev_output
                 
@@ -33,17 +33,38 @@ class Sequential:
         
         self.final_output = prev_output
 
-    def train(self, X, y, epochs=50):
+    def backprop(self, y_instance, is_update):
+        prev_error = []; error_calc_output = []
+        for idx, layer in enumerate(reversed(self.layers)):
+            if idx == 0: # If last layer
+                layer.error_calc_input = y_instance
+            else:
+                layer.error_calc_input = error_calc_output
+                layer.prev_error = prev_error
+            
+            prev_error = layer.passed_error
+            error_calc_output = layer.error_calc_output
+
+    def train(self, X, y, batch_size, epochs=50):
+        instance_size = len(X)
+        
+        # Initialize parameters for every layer
+        for layer in self.layers:
+            layer.init_params()
+
         # iterate every epoch
-        for epoch in epochs:
+        for epoch in list(range(epochs)):
             # iterate every instance
-            for instance in X:
-                # iterate every layer
-                for layer in self.layers[::-1]:
-                    prev_output = []
-                    curr_output = layer.output
-                    # Do some backprop stuff with the output
-                    print(layer)
+            for instance_idx, instance in enumerate(zip(X, y)):
+                X_instance = instance[0]; y_instance = instance[1]
+                
+                # If last instance or multiple of batch, update params
+                is_update = False
+                if ((instance_idx == instance_size) or (instance_idx % batch_size == 0)):
+                    is_update = True
+                
+                self.forwardprop(X_instance)
+                self.backprop(y_instance, is_update)
         return None
 
     def predict(self, X):
@@ -55,12 +76,21 @@ class Conv2D:
         self.input = []
         self.output = []
         
+        self.filter = []
         self.filter_number = filter_number
         self.filter_size_length = filter_size_length
         self.filter_size_width = filter_size_width
         self.padding_layer = padding_layer
         self.padded_number = padded_number
         self.stride = stride
+
+    def init_params(self):
+        self.filter = self.init_filter(
+            self.filter_number, 
+            self.filter_size_length, 
+            self.filter_size_width, 
+            self.input_matrix.shape
+            )
 
     def add_padding(self, input_matrix, padding_layer, padding_number):
         if (len(input_matrix.shape) > 2):
@@ -140,6 +170,7 @@ class Conv2D:
         padding_layer = self.padding_layer 
         padded_number = self.padded_number 
         stride = self.stride 
+        conv_filter = self.filter
 
         #Stage Validation
         if (len(input_matrix.shape) < 2):
@@ -150,9 +181,6 @@ class Conv2D:
         
         #Apply padding
         input_matrix = self.add_padding(input_matrix, padding_layer, padded_number)
-
-        #Initialize Convulation Filter
-        conv_filter = self.init_filter(filter_number, filter_size_length, filter_size_width, input_matrix.shape)
 
         #Initialize bias with 0
         list_bias = np.random.uniform(-1, 1, conv_filter.shape[0])
@@ -187,6 +215,9 @@ class Activation:
         self.output = []
         self.function_name = function_name
 
+    def init_params(self):
+        return None
+
     def sigmoid(self, net):
         return 1. / (1. + np.exp(-net))
 
@@ -217,6 +248,9 @@ class Pooling:
         self.pool_width = pool_width 
         self.stride = stride 
         self.mode = mode 
+
+    def init_params(self):
+        return None
 
     def run(self):
         input_matrix = self.input
@@ -276,12 +310,14 @@ class Pooling:
         self.output = result
         return None
 
-
 # Flatten
 class Flatten:
     def __init__(self):
         self.input = []
         self.output = []
+
+    def init_params(self):
+        return None
 
     def run(self):
         output_layer = self.input
@@ -294,8 +330,13 @@ class Dense:
         self.input = []
         self.output = []
         self.class_num = class_num
+        self.weights = []
+        # Error calculation, backprop
+        self.error_calc_input = []
+        self.prev_error = []
+        self.passed_error = []
 
-    def run(self):
+    def init_params(self):
         dense_input = self.input
         class_num = self.class_num
 
@@ -305,8 +346,16 @@ class Dense:
 
         # Init weight
         input_size = dense_input.size
+        self.weights = np.random.uniform(-1, 1, (input_size, class_num))
+        return None
+    
+    def run(self):
+        dense_input = self.input
+        class_num = self.class_num
+
+        # Init variables
+        input_size = dense_input.size
         flattened_input = dense_input.reshape(input_size)
-        weights = np.random.uniform(-1, 1, (input_size, class_num))
         output = np.zeros(class_num)
 
         # Calculate net output
