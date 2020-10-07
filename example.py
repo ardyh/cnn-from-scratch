@@ -52,6 +52,7 @@ print("**Dense output**")
 # print(l1_dense_output)
 # After
 model.forwardprop(img)
+model.layers[-2].calculate_error(numpy.array([0, 1])) 
 model_output = model.final_output
 model_feature_layer_output = model.feature_layer_output
 print("CNN CLASS MODEL OUTPUT")

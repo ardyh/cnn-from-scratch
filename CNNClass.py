@@ -20,12 +20,6 @@ class Sequential:
         return None
 
     def forwardprop(self, X_instance):
-        # DEBUG ONLY
-        # Initialize parameters for every layer
-        for layer in self.layers:
-            layer.init_params(X_instance.shape)
-        # DEBUG ONLY END
-
         prev_output = [] 
         for idx, layer in enumerate(self.layers):
             if idx == 0:
@@ -33,6 +27,7 @@ class Sequential:
             else:
                 layer.input = prev_output
                 
+            layer.init_params(layer.input.shape)
             layer.run()
             prev_output = layer.output
 
@@ -273,7 +268,7 @@ class Pooling:
     def init_params(self, input_shape):
         return None
 
-    def run(self):
+    def run(self): 
         # Stage Validation
         if (len(self.input.shape) < 2):
             raise Exception("Invalid input matrix")
@@ -374,7 +369,10 @@ class Dense:
         for shape in input_shape:
             input_size *= shape
         # input_size = dense_input.size
-        self.weights = np.random.uniform(-1, 1, (input_size + 1, class_num)) # +1 for bias
+        self.weights = np.random.uniform(-1, 1, (class_num, input_size + 1)) # +1 for bias
+        
+        self.reset_delta_weight()
+
         return None
 
     def reset_delta_weight(self):
@@ -391,19 +389,29 @@ class Dense:
         target_class = np.argmax(y_pred)
         derived_error_output = self.output.copy()
         derived_error_output[target_class] -= 1
+        
+        print("self.weights", self.weights, self.weights.shape)
+        print("self.output", self.output, self.output.shape)
+        print("derived_error_output", derived_error_output, derived_error_output.shape)
 
         # calculate derived error for layer weight
         # dNet/dweight = input
         derived_error_net = self.input.copy()
 
+        print("derived_error_net", derived_error_net, derived_error_net.shape)
+
         self.error = np.matmul(
             derived_error_output.reshape(derived_error_output.size, 1),
-            derived_error_net.reshape(1, derived_error_net.size)
+            derived_error_net.reshape(1, derived_error_net.size),
         )
+
+        print("self.error", self.error, self.error.shape)
 
         # Calculate delta_weight with momentum
         # Assumption: delta_weight(n) = error + alpha * delta_weight(n-1)
         self.delta_weight = self.error + self.momentum * self.delta_weight
+
+        print("self.delta_weight", self.delta_weight, self.delta_weight.shape)
 
     def update_weight(self):
         # Assumption: weight(n) = weight(n-1) - lr * delta_weight(n-1)
@@ -417,9 +425,9 @@ class Dense:
         self.output = np.zeros(class_num)
 
         # Calculate net output
-        for w in range(input_size):
-            for c in range(class_num):
-                self.output[c] += self.input[w] * self.weights[w][c] 
+        for c in range(class_num):
+            for w in range(input_size):
+                self.output[c] += self.input[w] * self.weights[c][w] 
 
         return None
 
