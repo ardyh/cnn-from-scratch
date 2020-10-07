@@ -2,7 +2,7 @@ import numpy as np
 import skimage.io
 
 class Sequential:
-    def __init__(self):
+    def __init__(self, n_epoch=50, learning_rate=0.5, momentum=0.1):
         self.input = []
         self.layers = [] 
         # DEBUG
@@ -10,6 +10,10 @@ class Sequential:
         self.feature_layer_output = []
         # DEBUG END
         self.final_output = []
+        
+        self.n_epoch = n_epoch
+        self.learning_rate = learning_rate
+        self.momentum = momentum
 
     def add(self, layer):
         self.layers.append(layer)
@@ -40,7 +44,8 @@ class Sequential:
         self.final_output = prev_output
 
     def backprop(self, y_instance, is_update):
-        prev_error = []; error_calc_output = []
+        prev_error = []; 
+        error_calc_output = []
         for idx, layer in enumerate(reversed(self.layers)):
             if idx == 0: # If last layer
                 layer.error_calc_input = y_instance
@@ -51,7 +56,7 @@ class Sequential:
             prev_error = layer.passed_error
             error_calc_output = layer.error_calc_output
 
-    def train(self, X, y, batch_size, epochs=50):
+    def train(self, X, y, batch_size):
         instance_size = len(X)
         
         # Initialize parameters for every layer
@@ -60,7 +65,7 @@ class Sequential:
             layer.init_params(X[0].shape)
 
         # iterate every epoch
-        for epoch in list(range(epochs)):
+        for epoch in list(range(self.n_epoch)):
             # iterate every instance
             for instance_idx, instance in enumerate(zip(X, y)):
                 X_instance = instance[0]; y_instance = instance[1]
@@ -179,50 +184,47 @@ class Conv2D:
     
 
     def run(self):
-        input_matrix = self.input
-        filter_number = self.filter_number 
-        filter_size_length = self.filter_size_length 
-        filter_size_width = self.filter_size_width 
-        padding_layer = self.padding_layer 
-        padded_number = self.padded_number 
-        stride = self.stride 
-        conv_filter = self.filter
-
         #Stage Validation
-        if (len(input_matrix.shape) < 2):
+        if (len(self.input.shape) < 2):
             raise Exception("Invalid input matrix")
         
-        if (filter_number <= 0 or filter_size_length <= 0 or filter_size_width <= 0 or stride <= 0 or padding_layer < 0) :
+        if (self.filter_number <= 0 or self.filter_size_length <= 0 or self.filter_size_width <= 0 or self.stride <= 0 or self.padding_layer < 0) :
             raise Exception("Error input parameter")
         
         #Apply padding
-        input_matrix = self.add_padding(input_matrix, padding_layer, padded_number)
+        self.input = self.add_padding(self.input, self.padding_layer, self.padded_number)
 
         #Initialize bias with 0
-        list_bias = np.random.uniform(-1, 1, conv_filter.shape[0])
+        list_bias = np.random.uniform(-1, 1, self.filter.shape[0])
 
         #Feature map formula : (W - F + 2P) / S + 1
-        feature_map_shape = (((input_matrix.shape[0] - conv_filter.shape[1] + 2 * padding_layer) // stride + 1),
-                            ((input_matrix.shape[1] - conv_filter.shape[2] + 2 * padding_layer) // stride + 1),
-                            filter_number)
+        feature_map_shape = (((self.input.shape[0] - self.filter.shape[1] + 2 * self.padding_layer) // self.stride + 1),
+                            ((self.input.shape[1] - self.filter.shape[2] + 2 * self.padding_layer) // self.stride + 1),
+                            self.filter_number)
         
         # Initialize feature map output
         feature_map = np.zeros(feature_map_shape)
 
-        for filter_num in range(conv_filter.shape[0]):
-            current_filter = conv_filter[filter_num, :]
+        for filter_num in range(self.filter.shape[0]):
+            current_filter = self.filter[filter_num, :]
 
             if len(current_filter.shape) > 2:
-                convolution_result = self.convolution_calculation(input_matrix[:, :, 0], current_filter[:, :, 0], padding_layer, stride)
+                convolution_result = self.convolution_calculation(self.input[:, :, 0], current_filter[:, :, 0], self.padding_layer, self.stride)
                 for channel in range(1, current_filter.shape[-1]):
-                    convolution_result = convolution_result + self.convolution_calculation(input_matrix[:, :, channel], current_filter[:, :, channel], padding_layer, stride)
+                    convolution_result = convolution_result + self.convolution_calculation(self.input[:, :, channel], current_filter[:, :, channel], self.padding_layer, self.stride)
             else:
-                convolution_result = self.convolution_calculation(input_matrix, current_filter, padding_layer, stride)
+                convolution_result = self.convolution_calculation(self.input, current_filter, self.padding_layer, self.stride)
             
             feature_map[:, :, filter_num] = convolution_result + list_bias[filter_num]
         
         self.output = feature_map
         return None
+
+    def backprop(self):
+        pass
+
+    def updateweigh(self):
+        pass
 
 # Activation
 class Activation:
@@ -255,6 +257,9 @@ class Activation:
         self.output = v_activation(input_matrix)
         return None
 
+    def backward(self):
+        pass
+
 # Pooling Layer
 class Pooling:
     def __init__(self, pool_length, pool_width, stride=2, mode='max'):
@@ -269,55 +274,49 @@ class Pooling:
         return None
 
     def run(self):
-        input_matrix = self.input
-        pool_length = self.pool_length 
-        pool_width = self.pool_width 
-        stride = self.stride 
-        mode = self.mode 
-
         # Stage Validation
-        if (len(input_matrix.shape) < 2):
+        if (len(self.input.shape) < 2):
             raise Exception("Invalid input matrix")
         
-        if (pool_length <= 0 or pool_width <= 0 or stride <= 0):
+        if (self.pool_length <= 0 or self.pool_width <= 0 or self.stride <= 0):
             raise Exception ("Error input parameter")
         
         #Initialize matrix result
-        result_shape = (((input_matrix.shape[0] - pool_length) // stride + 1),
-                        ((input_matrix.shape[1] - pool_width) // stride + 1),
-                        input_matrix.shape[-1])
+        result_shape = (((self.input.shape[0] - self.pool_length) // self.stride + 1),
+                        ((self.input.shape[1] - self.pool_width) // self.stride + 1),
+                        self.input.shape[-1])
         
         result = np.zeros(result_shape)
         
-        for channel in range(input_matrix.shape[-1]):
-            #input_matrix shape = (mxn)
-            region = input_matrix[:,:,channel]
-            output_shape = (((region.shape[0] - pool_length) // stride + 1),
-                            ((region.shape[1] - pool_width) // stride + 1))
+        for channel in range(self.input.shape[-1]):
+            #self.input shape = (mxn)
+            region = self.input[:,:,channel]
+            output_shape = (((region.shape[0] - self.pool_length) // self.stride + 1),
+                            ((region.shape[1] - self.pool_width) // self.stride + 1))
             
             output_matrix = np.zeros(output_shape)
 
             input_length_idx = 0; output_length_idx = 0
-            while(input_length_idx < region.shape[0] - pool_length + 1):
+            while(input_length_idx < region.shape[0] - self.pool_length + 1):
 
                 input_width_idx = 0; output_width_idx = 0
-                while(input_width_idx < region.shape[1] - pool_width + 1):
-                    current_region = region[input_length_idx : (input_length_idx + pool_length),
-                                            input_width_idx : (input_width_idx + pool_width)]
+                while(input_width_idx < region.shape[1] - self.pool_width + 1):
+                    current_region = region[input_length_idx : (input_length_idx + self.pool_length),
+                                            input_width_idx : (input_width_idx + self.pool_width)]
 
-                    if mode == 'max':
+                    if self.mode == 'max':
                         curr_result = np.max(current_region)
-                    elif mode == 'average':
+                    elif self.mode == 'average':
                         curr_result = np.mean(current_region)
                     else:
                         raise Exception("Invalid mode")
 
                     output_matrix[output_length_idx, output_width_idx] = curr_result
 
-                    input_width_idx += stride
+                    input_width_idx += self.stride
                     output_width_idx +=  1
                 #End while
-                input_length_idx += stride
+                input_length_idx += self.stride
                 output_length_idx += 1
             #End while
             
@@ -325,6 +324,12 @@ class Pooling:
 
         self.output = result
         return None
+
+    def backprop(self):
+        pass
+
+    def update_weight(self):
+        pass
 
 # Flatten
 class Flatten:
@@ -417,6 +422,9 @@ class Dense:
                 self.output[c] += self.input[w] * self.weights[w][c] 
 
         return None
+
+    def backward(self):
+        pass
 
 def load_image(image_path):
     try:
