@@ -2,8 +2,8 @@ import numpy as np
 import skimage.io
 
 class Sequential:
-    def __init__(self, input):
-        self.input = input
+    def __init__(self):
+        self.input = []
         self.layers = [] 
         # DEBUG
         self.conv_layer_final_idx = 3
@@ -16,6 +16,12 @@ class Sequential:
         return None
 
     def forwardprop(self, X_instance):
+        # DEBUG ONLY
+        # Initialize parameters for every layer
+        for layer in self.layers:
+            layer.init_params(X_instance.shape)
+        # DEBUG ONLY END
+
         prev_output = [] 
         for idx, layer in enumerate(self.layers):
             if idx == 0:
@@ -49,8 +55,9 @@ class Sequential:
         instance_size = len(X)
         
         # Initialize parameters for every layer
+        sample_instance = X[0]
         for layer in self.layers:
-            layer.init_params()
+            layer.init_params(X[0].shape)
 
         # iterate every epoch
         for epoch in list(range(epochs)):
@@ -72,10 +79,11 @@ class Sequential:
     
 # Conv Layer
 class Conv2D:
-    def __init__(self, filter_number, filter_size_length, filter_size_width, padding_layer=0, padded_number=0, stride=1):
+    def __init__(self, filter_number, filter_size_length, filter_size_width, n_channels=3, padding_layer=0, padded_number=0, stride=1):
         self.input = []
         self.output = []
         
+        self.n_channels = n_channels
         self.filter = []
         self.filter_number = filter_number
         self.filter_size_length = filter_size_length
@@ -84,12 +92,12 @@ class Conv2D:
         self.padded_number = padded_number
         self.stride = stride
 
-    def init_params(self):
+    def init_params(self, input_shape):
         self.filter = self.init_filter(
             self.filter_number, 
             self.filter_size_length, 
             self.filter_size_width, 
-            self.input_matrix.shape
+            input_shape
             )
 
     def add_padding(self, input_matrix, padding_layer, padding_number):
@@ -141,23 +149,31 @@ class Conv2D:
 
         return output_matrix
 
+    # def init_filter(self, filter_number, filter_size_length, filter_size_width, input_shape):
+    # Asumsi selalu 2D, maka input_shape ga butuh
     def init_filter(self, filter_number, filter_size_length, filter_size_width, input_shape):
         # set the lower and upper bound of randomized parameters to be intialized in filter
         LOWER_BOUND = -10
         UPPER_BOUND = 10
 
         convolution_filter = []
-        #Initialize Convulation Filter / Kernel
-        if (len(input_shape) > 2):
-            filter_channel = input_shape[-1]
+        filter_channel = input_shape[-1]
 
-            convolution_filter = np.zeros((filter_number, filter_size_length, filter_size_width, filter_channel))
-            for i in range(filter_number):
-                convolution_filter[i, :, :, :] = np.random.uniform(low=LOWER_BOUND, high=UPPER_BOUND, size=(filter_size_length, filter_size_width, filter_channel))
-        else:
-            convolution_filter = np.zeros((filter_number, filter_size_length, filter_size_width))
-            for i in range(filter_number):
-                convolution_filter[i, :, :] = np.random.uniform(low=LOWER_BOUND, high=UPPER_BOUND, size=(filter_size_length, filter_size_width))
+        convolution_filter = np.zeros((filter_number, filter_size_length, filter_size_width, filter_channel))
+        for i in range(filter_number):
+            convolution_filter[i, :, :, :] = np.random.uniform(low=LOWER_BOUND, high=UPPER_BOUND, size=(filter_size_length, filter_size_width, filter_channel))
+        
+        #Initialize Convulation Filter / Kernel
+        # if (len(input_shape) > 2):
+        #     filter_channel = input_shape[-1]
+
+        #     convolution_filter = np.zeros((filter_number, filter_size_length, filter_size_width, filter_channel))
+        #     for i in range(filter_number):
+        #         convolution_filter[i, :, :, :] = np.random.uniform(low=LOWER_BOUND, high=UPPER_BOUND, size=(filter_size_length, filter_size_width, filter_channel))
+        # else:
+        #     convolution_filter = np.zeros((filter_number, filter_size_length, filter_size_width))
+        #     for i in range(filter_number):
+        #         convolution_filter[i, :, :] = np.random.uniform(low=LOWER_BOUND, high=UPPER_BOUND, size=(filter_size_length, filter_size_width))
         
         return convolution_filter
     
@@ -215,7 +231,7 @@ class Activation:
         self.output = []
         self.function_name = function_name
 
-    def init_params(self):
+    def init_params(self, input_shape):
         return None
 
     def sigmoid(self, net):
@@ -249,7 +265,7 @@ class Pooling:
         self.stride = stride 
         self.mode = mode 
 
-    def init_params(self):
+    def init_params(self, input_shape):
         return None
 
     def run(self):
@@ -316,7 +332,7 @@ class Flatten:
         self.input = []
         self.output = []
 
-    def init_params(self):
+    def init_params(self, input_shape):
         return None
 
     def run(self):
@@ -326,18 +342,22 @@ class Flatten:
 
 # Dense
 class Dense:
-    def __init__(self, class_num):
+    def __init__(self, class_num, bias=1, momentum=0.01, learning_rate=0.05):
         self.input = []
         self.output = []
         self.class_num = class_num
         self.weights = []
+        self.bias = bias
+        self.momentum = momentum
+        self.learning_rate = learning_rate
         # Error calculation, backprop
-        self.error_calc_input = []
+        self.delta_weight = []
+        self.error_calc_input = [] # assume it's like y_true, but it can be propagated to other layers
         self.prev_error = []
         self.passed_error = []
+        self.error = []
 
-    def init_params(self):
-        dense_input = self.input
+    def init_params(self, input_shape):
         class_num = self.class_num
 
         # Validation
@@ -345,25 +365,57 @@ class Dense:
             raise Exception("Invalid class number")
 
         # Init weight
-        input_size = dense_input.size
-        self.weights = np.random.uniform(-1, 1, (input_size, class_num))
+        input_size = 1
+        for shape in input_shape:
+            input_size *= shape
+        # input_size = dense_input.size
+        self.weights = np.random.uniform(-1, 1, (input_size + 1, class_num)) # +1 for bias
         return None
-    
-    def run(self):
-        dense_input = self.input
-        class_num = self.class_num
 
+    def reset_delta_weight(self):
+        self.delta_weight = np.zeros(self.weights.shape)
+
+    # def calculate_error(self):
+    ## DEBUG
+    def calculate_error(self, y_pred):
+        # calculate derived error for OUTPUT (Kayanya ini perlu dipindah ke activation function, karena kita bikin kelas yang beda untuk activation function dan dense)
+        # pj if p == label; (pj - 1) if p != label
+        # Assumption: error_calc_input comes as an instance, so has the shape (class_num)
+        # Assumption: activation used to calculate dError/dNet is softmax
+        # get predicted class from output (index with highest value)
+        target_class = np.argmax(y_pred)
+        derived_error_output = self.output.copy()
+        derived_error_output[target_class] -= 1
+
+        # calculate derived error for layer weight
+        # dNet/dweight = input
+        derived_error_net = self.input.copy()
+
+        self.error = np.matmul(
+            derived_error_output.reshape(derived_error_output.size, 1),
+            derived_error_net.reshape(1, derived_error_net.size)
+        )
+
+        # Calculate delta_weight with momentum
+        # Assumption: delta_weight(n) = error + alpha * delta_weight(n-1)
+        self.delta_weight = self.error + self.momentum * self.delta_weight
+
+    def update_weight(self):
+        # Assumption: weight(n) = weight(n-1) - lr * delta_weight(n-1)
+        self.weight = self.weight - self.learning_rate * self.delta_weight
+
+    def run(self):
         # Init variables
-        input_size = dense_input.size
-        flattened_input = dense_input.reshape(input_size)
-        output = np.zeros(class_num)
+        self.input = np.append(self.input, self.bias) # Append bias to input. Assumption: input is already flattened
+        class_num = self.class_num
+        input_size = self.input.size
+        self.output = np.zeros(class_num)
 
         # Calculate net output
         for w in range(input_size):
             for c in range(class_num):
-                output[c] += flattened_input[w] * weights[w][c] 
+                self.output[c] += self.input[w] * self.weights[w][c] 
 
-        self.output = output
         return None
 
 def load_image(image_path):

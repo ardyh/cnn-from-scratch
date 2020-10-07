@@ -11,25 +11,25 @@ BASE_IMG_DIR = "images/sandbox/"
 img = numpycnn.load_image(f"{BASE_IMG_DIR}cat.38.jpg")
 
 # Define model
-model = CNNClass.Sequential(img)
+model = CNNClass.Sequential()
 
 # Convoluting the image
 print("**Convolution Layer Start**")
 print("**Convolution Stage**")
 # Prev
-l1_feature_map = numpycnn.convolution_stage(img, 2, 3, 2, 2, 0, 2) # (input_matrix, filter_number, filter_size_length, filter_size_width, pad_layer, padded_number, stride=1):
+# l1_feature_map = numpycnn.convolution_stage(img, 2, 3, 2, 2, 0, 2) # (input_matrix, filter_number, filter_size_length, filter_size_width, pad_layer, padded_number, stride=1):
 # After
 model.add(CNNClass.Conv2D(2, 3, 2, 2, 0, 2))
 
 print("**Detector Stage**")
 # Prev
-l1_feature_map_relu = numpycnn.activation(l1_feature_map)
+# l1_feature_map_relu = numpycnn.activation(l1_feature_map)
 # After
 model.add(CNNClass.Activation("relu"))
 
 print("**Pooling Stage**")
 # Prev
-l1_feature_map_relu_pool = numpycnn.pool_stage(l1_feature_map_relu, 2, 2, 2)
+# l1_feature_map_relu_pool = numpycnn.pool_stage(l1_feature_map_relu, 2, 2, 2)
 # After
 model.add(CNNClass.Pooling(2, 2, 2))
 
@@ -37,18 +37,21 @@ print("**End of Convolution Layer**\n")
 
 print("**Dense layer**")
 # Prev
-l1_flat = numpycnn.flatten(l1_feature_map_relu_pool)
+# l1_flat = numpycnn.flatten(l1_feature_map_relu_pool)
 # After
 model.add(CNNClass.Flatten())
 
 # Prev
-l1_dense_output = numpycnn.dense(l1_flat, 10, "relu")
+# l1_dense_output = numpycnn.dense(l1_flat, 10, "relu")
 # After
-model.add(CNNClass.Dense(10))
+model.add(CNNClass.Dense(2))
 model.add(CNNClass.Activation())
 print("**Dense output**")
-print(l1_dense_output)
-model.forwardprop()
+
+# Prev
+# print(l1_dense_output)
+# After
+model.forwardprop(img)
 model_output = model.final_output
 model_feature_layer_output = model.feature_layer_output
 print("CNN CLASS MODEL OUTPUT")
