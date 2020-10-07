@@ -218,7 +218,7 @@ class Conv2D:
     def backprop(self):
         pass
 
-    def updateweigh(self):
+    def updateweight(self):
         pass
 
 # Activation
@@ -227,8 +227,35 @@ class Activation:
         self.input = []
         self.output = []
         self.function_name = function_name
+        # Error calculation, backprop
+        self.error_calc_input = [] # assume it's like y_true, but it can be propagated to other layers
+        self.prev_error = []
+        self.passed_error = []
+        self.error = [] # harusnya gaperlu disini
 
     def init_params(self, input_shape):
+        return None
+
+    def calculate_delta_output(self, y_true):
+        # Assuming untuk output layer
+        for y_true_val, output_val in zip(y_true, self.output):
+            class_error_term = 0
+            if (function_name == "sigmoid"):
+                # Buat hidden tinggal ambil term: output_val * (1 - output_val) 
+                class_error_term = (y_true_val - output_val) * output_val * (1 - output_val) 
+            elif (function_name == "relu"):
+                # Buat hidden tinggal ambil term: relu_derivative_val
+                relu_derivative_val = 1 if output_val > 0 else 0
+                class_error_term = (y_true_val - output_val) * relu_derivative_val
+            else:
+                raise Exception("Invalid activation function name")
+        
+            self.passed_error.append(class_error_term) 
+        
+        self.passed_error = np.array(self.passed_error)
+    
+    def calculate_delta_hidden(self):
+        # Mirip kaya calculate_delta_output, term yang digunakan sama, tapi perkalian matriks, bukan perkalian bilangan 
         return None
 
     def sigmoid(self, net):
@@ -247,7 +274,7 @@ class Activation:
         elif (function_name == "relu"):
             v_activation = np.vectorize(self.relu)
         else:
-            raise Exception("Invalid activation function")
+            raise Exception("Invalid activation function name")
 
         self.output = v_activation(input_matrix)
         return None
