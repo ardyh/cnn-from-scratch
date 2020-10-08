@@ -317,8 +317,18 @@ class Activation:
         self.output = v_activation(input_matrix)
         return None
 
-    def backward(self):
-        pass
+    def backward(self, error):
+        result = np.zeros(self.output.shape)
+
+        for channel in range(self.output.shape[-1]):
+            for i in range(self.output.shape[0]):
+                for j in range(self.output.shape[1]):
+                    if(self.output[i,j,channel] > 0):
+                        result[i,j,channel] = error[i,j,channel]
+                    else:
+                        result[i,j,channel] = 0
+        
+        return result
 
 # Pooling Layer
 class Pooling:
@@ -405,7 +415,6 @@ class Pooling:
         result = np.zeros(self.input.shape)
 
         for channel in range(self.output.shape[-1]):
-
             for i in range(self.output.shape[0]):
                 for j in range(self.output.shape[1]):
                     x_pos = self.output_position_x[i,j,channel]
