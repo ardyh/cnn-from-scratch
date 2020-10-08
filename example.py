@@ -45,15 +45,21 @@ model.add(CNNClass.Flatten())
 # l1_dense_output = numpycnn.dense(l1_flat, 10, "relu")
 # After
 model.add(CNNClass.Dense(2))
-model.add(CNNClass.Activation())
+model.add(CNNClass.Activation("sigmoid"))
 print("**Dense output**")
 
 # Prev
 # print(l1_dense_output)
+
 # After
+# FORWARD PROP
 model.forwardprop(img)
-model.layers[-2].calculate_error(numpy.array([0, 1])) 
+# COBA COBA
+model.layers[-1].calculate_delta_output(numpy.array([0, 1])) 
+model.layers[-2].prev_error = model.layers[-1].passed_error
+model.layers[-2].calculate_error() 
 model_output = model.final_output
+# SIMPEN HASIL
 model_feature_layer_output = model.feature_layer_output
 print("CNN CLASS MODEL OUTPUT")
 print(model_output)

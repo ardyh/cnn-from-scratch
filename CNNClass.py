@@ -240,10 +240,10 @@ class Activation:
         # Assuming untuk output layer
         for y_true_val, output_val in zip(y_true, self.output):
             class_error_term = 0
-            if (function_name == "sigmoid"):
+            if (self.function_name == "sigmoid"):
                 # Buat hidden tinggal ambil term: output_val * (1 - output_val) 
                 class_error_term = (y_true_val - output_val) * output_val * (1 - output_val) 
-            elif (function_name == "relu"):
+            elif (self.function_name == "relu"):
                 # Buat hidden tinggal ambil term: relu_derivative_val
                 relu_derivative_val = 1 if output_val > 0 else 0
                 class_error_term = (y_true_val - output_val) * relu_derivative_val
@@ -253,10 +253,48 @@ class Activation:
             self.passed_error.append(class_error_term) 
         
         self.passed_error = np.array(self.passed_error)
+
+        # DEBUG
+        print("self.output_act", self.output)
+        print("self.passed_error_act", self.passed_error)
     
+    # Assumption only works for layers where output dimension of next layer is equal to activation layer's input dimension
     def calculate_delta_hidden(self):
         # Mirip kaya calculate_delta_output, term yang digunakan sama, tapi perkalian matriks, bukan perkalian bilangan 
+        # untuk setiap value di output, terapkan formula diatas
+
+        # activation function defaults to relu
+        if (function_name == "sigmoid"):
+            v_activation = np.vectorize(self.d_sigmoid)
+        elif (function_name == "relu"):
+            v_activation = np.vectorize(self.d_relu)
+        else:
+            raise Exception("Invalid activation function name")
+
+        curr_error = v_activation(self.output)
+        
+        # Asumsi: 
+        #     - error dikali dari yang paling dekat output layer dulu
+        #     - prev_error = error layer2 sebelumnya; jika di-iterasi mulai output layer 
+        # Maka: delta = prev_error * curr_error; 
+        
+        # Cari dimensi yang sama dari prev_error
+        if (self.prev_error.shape[1] == curr_error.shape[0]): #n_col(prev_error) == n_rows(curr_error), langsung kali
+            self.error = np.matmul(self.prev_error, curr_error)
+        elif (self.prev_error.shape[1] != curr_error.shape[0]): # Kalo n_col(prev_error) != n_rows(curr_error), transpose
+            self.error = np.matmul(self.prev_error, curr_error.transpose())
+        else: # if no intersection
+            raise Exception("Cannot do matrix multiplication. No intersecting dimensions")
+
         return None
+
+    def d_sigmoid(self, out):
+        # Works for single value only
+        return out * (1 - out)
+
+    def d_relu(self, out):
+        # Works for single value only
+        return 1 if out > 0 else 0
 
     def sigmoid(self, net):
         return 1. / (1. + np.exp(-net))
@@ -405,40 +443,28 @@ class Dense:
     def reset_delta_weight(self):
         self.delta_weight = np.zeros(self.weights.shape)
 
-    # def calculate_error(self):
-    ## DEBUG
-    def calculate_error(self, y_pred):
-        # calculate derived error for OUTPUT (Kayanya ini perlu dipindah ke activation function, karena kita bikin kelas yang beda untuk activation function dan dense)
-        # pj if p == label; (pj - 1) if p != label
-        # Assumption: error_calc_input comes as an instance, so has the shape (class_num)
-        # Assumption: activation used to calculate dError/dNet is softmax
-        # get predicted class from output (index with highest value)
-        target_class = np.argmax(y_pred)
-        derived_error_output = self.output.copy()
-        derived_error_output[target_class] -= 1
-        
-        print("self.weights", self.weights, self.weights.shape)
-        print("self.output", self.output, self.output.shape)
-        print("derived_error_output", derived_error_output, derived_error_output.shape)
-
+    def calculate_error(self):
         # calculate derived error for layer weight
         # dNet/dweight = input
         derived_error_net = self.input.copy()
 
-        print("derived_error_net", derived_error_net, derived_error_net.shape)
-
         self.error = np.matmul(
-            derived_error_output.reshape(derived_error_output.size, 1),
+            self.prev_error.reshape(self.prev_error.size, 1),
             derived_error_net.reshape(1, derived_error_net.size),
         )
-
-        print("self.error", self.error, self.error.shape)
 
         # Calculate delta_weight with momentum
         # Assumption: delta_weight(n) = error + alpha * delta_weight(n-1)
         self.delta_weight = self.error + self.momentum * self.delta_weight
 
-        print("self.delta_weight", self.delta_weight, self.delta_weight.shape)
+        # DEBUG
+        print("self.weights_dense", self.weights, self.weights.shape)
+        print("self.output_dense", self.output, self.output.shape)
+        print("self.prev_error_dense", self.prev_error, self.prev_error.shape)
+        print("derived_error_net_dense", derived_error_net, derived_error_net.shape)
+        print("self.error_dense", self.error, self.error.shape)
+        print("self.delta_weight_dense", self.delta_weight, self.delta_weight.shape)
+        # DEBUG END
 
     def update_weight(self):
         # Assumption: weight(n) = weight(n-1) - lr * delta_weight(n-1)
