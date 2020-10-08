@@ -79,11 +79,10 @@ class Sequential:
     
 # Conv Layer
 class Conv2D:
-    def __init__(self, filter_number, filter_size_length, filter_size_width, n_channels=3, padding_layer=0, padded_number=0, stride=1, learning_rate=0.1, momentum=0.5):
+    def __init__(self, filter_number, filter_size_length, filter_size_width, padding_layer=0, padded_number=0, stride=1, learning_rate=0.1, momentum=0.5):
         self.input = []
         self.output = []
         
-        self.n_channels = n_channels
         self.filter = []
         self.delta_filter = []
         self.error_filter = []
