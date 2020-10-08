@@ -325,6 +325,8 @@ class Pooling:
     def __init__(self, pool_length, pool_width, stride=2, mode='max'):
         self.input = []
         self.output = []
+        self.output_position_x = []
+        self.output_position_y = []
         self.pool_length = pool_length 
         self.pool_width = pool_width 
         self.stride = stride 
@@ -347,6 +349,8 @@ class Pooling:
                         self.input.shape[-1])
         
         result = np.zeros(result_shape)
+        result_position_x = np.zeros(result_shape)
+        result_position_y = np.zeros(result_shape)
         
         for channel in range(self.input.shape[-1]):
             #self.input shape = (mxn)
@@ -355,6 +359,8 @@ class Pooling:
                             ((region.shape[1] - self.pool_width) // self.stride + 1))
             
             output_matrix = np.zeros(output_shape)
+            output_position_x_matrix = np.zeros(output_shape)
+            output_position_y_matrix = np.zeros(output_shape)
 
             input_length_idx = 0; output_length_idx = 0
             while(input_length_idx < region.shape[0] - self.pool_length + 1):
@@ -366,12 +372,16 @@ class Pooling:
 
                     if self.mode == 'max':
                         curr_result = np.max(current_region)
+                        curr_position = np.argmax(current_region)
                     elif self.mode == 'average':
                         curr_result = np.mean(current_region)
+                        curr_position = 0
                     else:
                         raise Exception("Invalid mode")
 
                     output_matrix[output_length_idx, output_width_idx] = curr_result
+                    output_position_x_matrix[output_length_idx, output_width_idx] = input_length_idx + curr_position // current_region.shape[0]
+                    output_position_y_matrix[output_length_idx, output_width_idx] = input_width_idx + curr_position % current_region.shape[0]
 
                     input_width_idx += self.stride
                     output_width_idx +=  1
@@ -381,15 +391,30 @@ class Pooling:
             #End while
             
             result[:,:,channel] = output_matrix
+            result_position_x[:,:,channel] = output_position_x_matrix
+            result_position_y[:,:,channel] = output_position_y_matrix
 
         self.output = result
+        self.output_position_x = result_position_x
+        self.output_position_y = result_position_y
+
         return None
 
-    def backprop(self):
-        pass
+    def backprop(self, error):
+        #Result_shape = self.input_shape and error_shape = self.output_shape
+        result = np.zeros(self.input.shape)
 
-    def update_weight(self):
-        pass
+        for channel in range(self.output.shape[-1]):
+
+            for i in range(self.output.shape[0]):
+                for j in range(self.output.shape[1]):
+                    x_pos = self.output_position_x[i,j,channel]
+                    y_pos = self.output_position_y[i,j,channel]
+                    value = error[i,j,channel]
+
+                    result[int(x_pos), int(y_pos), channel] = value
+        
+        return result
 
 # Flatten
 class Flatten:
