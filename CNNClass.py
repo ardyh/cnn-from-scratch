@@ -85,6 +85,7 @@ class Conv2D:
         
         self.n_channels = n_channels
         self.filter = []
+        self.delta_filter = []
         self.filter_number = filter_number
         self.filter_size_length = filter_size_length
         self.filter_size_width = filter_size_width
@@ -92,30 +93,54 @@ class Conv2D:
         self.padded_number = padded_number
         self.stride = stride
 
+        self.filter_bias = []
+        self.delta_bias = []
+
     def init_params(self, input_shape):
-        self.filter = self.init_filter(
-            self.filter_number, 
-            self.filter_size_length, 
-            self.filter_size_width, 
-            input_shape
-            )
+        #Init Filter
+        self.init_filter()
+        
+        #Apply padding
+        self.add_padding()
 
-    def add_padding(self, input_matrix, padding_layer, padding_number):
-        if (len(input_matrix.shape) > 2):
+        #Initialize bias with 0
+        self.filter_bias = np.zeros(self.filter.shape[0])
+
+        #Initialize delta weight & bias
+        self.delta_filter = np.zeros(self.filter.shape)
+        self.delta_bias = np.zeros(self.filter_bias.shape)
+
+    # def init_filter(self, filter_number, filter_size_length, filter_size_width, input_shape):
+    # Asumsi selalu 2D, maka input_shape ga butuh
+    def init_filter(self):
+        # set the lower and upper bound of randomized parameters to be intialized in filter
+        LOWER_BOUND = -10
+        UPPER_BOUND = 10
+
+        convolution_filter = []
+        filter_channel = self.input.shape[-1]
+
+        convolution_filter = np.zeros((self.filter_number, self.filter_size_length, self.filter_size_width, filter_channel))
+        for i in range(self.filter_number):
+            convolution_filter[i, :, :, :] = np.random.uniform(low=LOWER_BOUND, high=UPPER_BOUND, size=(self.filter_size_length, self.filter_size_width, filter_channel))
+
+        self.filter = convolution_filter
+
+    def add_padding(self):
+        if (len(self.input.shape) > 2):
             #Initialize matrix result
-            padded_result = np.zeros((input_matrix.shape[0] + padding_layer * 2, 
-                                    input_matrix.shape[1] + padding_layer * 2,
-                                    input_matrix.shape[-1]))
+            padded_result = np.zeros((self.input.shape[0] + self.padding_layer * 2, 
+                                    self.input.shape[1] + self.padding_layer * 2,
+                                    self.input.shape[-1]))
 
-            for i in range(input_matrix.shape[-1]):
-                current_channel = input_matrix[:, :, i]
-                padded_current_channel = np.pad(current_channel, padding_layer, mode='constant', constant_values=padding_number)
+            for i in range(self.input.shape[-1]):
+                current_channel = self.input[:, :, i]
+                padded_current_channel = np.pad(current_channel, self.padding_layer, mode='constant', constant_values=self.padded_number)
                 padded_result[:, :, i] = padded_current_channel
         else:
-            padded_result = np.pad(input_matrix, padding_layer, mode='constant', constant_values=padding_number)
+            padded_result = np.pad(self.input, self.padding_layer, mode='constant', constant_values=self.padded_number)
 
-        return padded_result
-
+        self.input = padded_result
 
     def convolution_calculation(self, input_matrix, conv_filter, padding_layer, stride):
         #input_matrix shape = (mxn)
@@ -149,35 +174,6 @@ class Conv2D:
 
         return output_matrix
 
-    # def init_filter(self, filter_number, filter_size_length, filter_size_width, input_shape):
-    # Asumsi selalu 2D, maka input_shape ga butuh
-    def init_filter(self, filter_number, filter_size_length, filter_size_width, input_shape):
-        # set the lower and upper bound of randomized parameters to be intialized in filter
-        LOWER_BOUND = -10
-        UPPER_BOUND = 10
-
-        convolution_filter = []
-        filter_channel = input_shape[-1]
-
-        convolution_filter = np.zeros((filter_number, filter_size_length, filter_size_width, filter_channel))
-        for i in range(filter_number):
-            convolution_filter[i, :, :, :] = np.random.uniform(low=LOWER_BOUND, high=UPPER_BOUND, size=(filter_size_length, filter_size_width, filter_channel))
-        
-        #Initialize Convulation Filter / Kernel
-        # if (len(input_shape) > 2):
-        #     filter_channel = input_shape[-1]
-
-        #     convolution_filter = np.zeros((filter_number, filter_size_length, filter_size_width, filter_channel))
-        #     for i in range(filter_number):
-        #         convolution_filter[i, :, :, :] = np.random.uniform(low=LOWER_BOUND, high=UPPER_BOUND, size=(filter_size_length, filter_size_width, filter_channel))
-        # else:
-        #     convolution_filter = np.zeros((filter_number, filter_size_length, filter_size_width))
-        #     for i in range(filter_number):
-        #         convolution_filter[i, :, :] = np.random.uniform(low=LOWER_BOUND, high=UPPER_BOUND, size=(filter_size_length, filter_size_width))
-        
-        return convolution_filter
-    
-
     def run(self):
         #Stage Validation
         if (len(self.input.shape) < 2):
@@ -185,12 +181,6 @@ class Conv2D:
         
         if (self.filter_number <= 0 or self.filter_size_length <= 0 or self.filter_size_width <= 0 or self.stride <= 0 or self.padding_layer < 0) :
             raise Exception("Error input parameter")
-        
-        #Apply padding
-        self.input = self.add_padding(self.input, self.padding_layer, self.padded_number)
-
-        #Initialize bias with 0
-        list_bias = np.random.uniform(-1, 1, self.filter.shape[0])
 
         #Feature map formula : (W - F + 2P) / S + 1
         feature_map_shape = (((self.input.shape[0] - self.filter.shape[1] + 2 * self.padding_layer) // self.stride + 1),
@@ -210,15 +200,22 @@ class Conv2D:
             else:
                 convolution_result = self.convolution_calculation(self.input, current_filter, self.padding_layer, self.stride)
             
-            feature_map[:, :, filter_num] = convolution_result + list_bias[filter_num]
+            feature_map[:, :, filter_num] = convolution_result + self.filter_bias[filter_num]
         
         self.output = feature_map
         return None
 
-    def backprop(self):
+    def backprop(self, error):
+        #Get delta bias 
+        for i in range (error.shape[-1]):
+            self.delta_bias[i] = np.sum(error[:,:,i])
+
+        result = np.zeros(self.delta_filter.shape)
+
         pass
 
     def updateweight(self):
+        print("update_weight")
         pass
 
 # Activation
