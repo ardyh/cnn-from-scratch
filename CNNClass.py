@@ -502,7 +502,7 @@ class Dense:
 
     def update_weight(self):
         # Assumption: weight(n) = weight(n-1) - lr * delta_weight(n-1)
-        self.weight = self.weight - self.learning_rate * self.delta_weight
+        self.weights = self.weights - self.learning_rate * self.delta_weight
 
     def run(self):
         # Init variables
@@ -524,6 +524,7 @@ class Dense:
 def load_image(image_path):
     try:
         raw_img = skimage.io.imread(image_path)
+        raw_img = skimage.transform.resize(raw_img,(100,100))
     except:
         raise Exception("Failed to load image")
 

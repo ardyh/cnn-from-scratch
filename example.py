@@ -47,6 +47,8 @@ model.add(CNNClass.Flatten())
 model.add(CNNClass.Dense(2))
 model.add(CNNClass.Activation("sigmoid"))
 print("**Dense output**")
+print("weights before update")
+print(model.layers[-2].weights)
 
 # Prev
 # print(l1_dense_output)
@@ -57,7 +59,10 @@ model.forwardprop(img)
 # COBA COBA
 model.layers[-1].calculate_delta_output(numpy.array([0, 1])) 
 model.layers[-2].prev_error = model.layers[-1].passed_error
-model.layers[-2].calculate_error() 
+model.layers[-2].calculate_error()
+model.layers[-2].update_weight()
+print("weights after update")
+print(model.layers[-2].weights)
 model_output = model.final_output
 # SIMPEN HASIL
 model_feature_layer_output = model.feature_layer_output
