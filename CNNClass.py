@@ -79,13 +79,14 @@ class Sequential:
     
 # Conv Layer
 class Conv2D:
-    def __init__(self, filter_number, filter_size_length, filter_size_width, n_channels=3, padding_layer=0, padded_number=0, stride=1):
+    def __init__(self, filter_number, filter_size_length, filter_size_width, n_channels=3, padding_layer=0, padded_number=0, stride=1, learning_rate=0.1, momentum=0.5):
         self.input = []
         self.output = []
         
         self.n_channels = n_channels
         self.filter = []
         self.delta_filter = []
+        self.error_filter = []
         self.filter_number = filter_number
         self.filter_size_length = filter_size_length
         self.filter_size_width = filter_size_width
@@ -95,13 +96,18 @@ class Conv2D:
 
         self.filter_bias = []
         self.delta_bias = []
+        self.error_bias = []
+
+        #Define update weight variables
+        self.learning_rate = learning_rate
+        self.momentum = momentum
 
     def init_params(self, input_shape):
         #Init Filter
         self.init_filter()
         
         #Apply padding
-        self.add_padding()
+        self.input = self.add_padding(self.input)
 
         #Initialize bias with 0
         self.filter_bias = np.zeros(self.filter.shape[0])
@@ -109,6 +115,10 @@ class Conv2D:
         #Initialize delta weight & bias
         self.delta_filter = np.zeros(self.filter.shape)
         self.delta_bias = np.zeros(self.filter_bias.shape)
+
+        #Initialize error weight & bias
+        self.error_filter = np.zeros(self.filter.shape)
+        self.error_bias = np.zeros(self.filter_bias.shape)
 
     # def init_filter(self, filter_number, filter_size_length, filter_size_width, input_shape):
     # Asumsi selalu 2D, maka input_shape ga butuh
@@ -126,21 +136,21 @@ class Conv2D:
 
         self.filter = convolution_filter
 
-    def add_padding(self):
-        if (len(self.input.shape) > 2):
+    def add_padding(self, input_matrix):
+        if (len(input_matrix.shape) > 2):
             #Initialize matrix result
-            padded_result = np.zeros((self.input.shape[0] + self.padding_layer * 2, 
-                                    self.input.shape[1] + self.padding_layer * 2,
-                                    self.input.shape[-1]))
+            padded_result = np.zeros((input_matrix.shape[0] + self.padding_layer * 2, 
+                                    input_matrix.shape[1] + self.padding_layer * 2,
+                                    input_matrix.shape[-1]))
 
-            for i in range(self.input.shape[-1]):
-                current_channel = self.input[:, :, i]
+            for i in range(input_matrix.shape[-1]):
+                current_channel = input_matrix[:, :, i]
                 padded_current_channel = np.pad(current_channel, self.padding_layer, mode='constant', constant_values=self.padded_number)
                 padded_result[:, :, i] = padded_current_channel
         else:
-            padded_result = np.pad(self.input, self.padding_layer, mode='constant', constant_values=self.padded_number)
+            padded_result = np.pad(input_matrix, self.padding_layer, mode='constant', constant_values=self.padded_number)
 
-        self.input = padded_result
+        return padded_result
 
     def convolution_calculation(self, input_matrix, conv_filter, padding_layer, stride):
         #input_matrix shape = (mxn)
@@ -206,17 +216,60 @@ class Conv2D:
         return None
 
     def backprop(self, error):
-        #Get delta bias 
+        #Calculate error bias 
         for i in range (error.shape[-1]):
-            self.delta_bias[i] = np.sum(error[:,:,i])
+            self.error_bias[i] = np.sum(error[:,:,i])
 
-        result = np.zeros(self.delta_filter.shape)
 
-        pass
+        #Calculate dE / dW (Error Weight)
+        for channel in range (self.input.shape[-1]):
+            for filter_num in range(error.shape[-1]):
+                product_matrix = self.convolution_calculation(self.input[:,:,channel], error[:,:,filter_num], self.padding_layer, self.stride)
+                self.error_filter[filter_num,:,:,channel] = product_matrix
+
+
+        #Update Weight
+        self.updateweight()
+
+
+        #Calculate dE / dX (Error Input)
+        error = self.add_padding(error)
+
+        #Output matrix formula : (W - F + 2P) / S + 1
+        output_matrix_shape = (((error.shape[0] - self.filter.shape[1] + 2 * self.padding_layer) // self.stride + 1),
+                            ((error.shape[1] - self.filter.shape[2] + 2 * self.padding_layer) // self.stride + 1),
+                            self.filter_number)
+        
+        # Initialize Output matrix output
+        output_matrix = np.zeros(output_matrix_shape)
+
+        for filter_num in range(self.filter.shape[0]):
+            current_filter = self.filter[filter_num, :]
+
+            if len(current_filter.shape) > 2:
+                matrix_product = self.convolution_calculation(self.error[:, :, 0], current_filter[:, :, 0], self.padding_layer, self.stride)
+                for channel in range(1, current_filter.shape[-1]):
+                    matrix_product = matrix_product + self.convolution_calculation(self.error[:, :, channel], current_filter[:, :, channel], self.padding_layer, self.stride)
+            else:
+                matrix_product = self.convolution_calculation(self.error, current_filter, self.padding_layer, self.stride)
+            
+            output_matrix[:, :, filter_num] = matrix_product
+        
+        return output_matrix
 
     def updateweight(self):
-        print("update_weight")
-        pass
+        #Update Bias
+        for i in range(len(self.delta_bias)):
+            self.delta_bias[i] = self.learning_rate * self.error_bias[i] + self.momentum * self.delta_bias[i]
+            self.filter_bias[i] -= self.delta_bias[i]
+
+        #Update weight
+        for filter_num in range(self.delta_filter.shape[0]):
+            for i in range (self.delta_filter.shape[1]):
+                for j in range (self.delta_filter.shape[2]):
+                    for k in range (self.delta_filter.shape[3]):
+                        self.delta_filter[filter_num,i,j,k] = self.learning_rate * self.error_filter[filter_num,i,j,k] + self.momentum * self.delta_filter[filter_num,i,j,k]
+                        self.filter[filter_num,i,j,k] -= self.delta_filter[filter_num,i,j,k]
 
 # Activation
 class Activation:
@@ -314,7 +367,7 @@ class Activation:
         self.output = v_activation(input_matrix)
         return None
 
-    def backward(self, error):
+    def backprop(self, error):
         result = np.zeros(self.output.shape)
 
         for channel in range(self.output.shape[-1]):
