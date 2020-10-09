@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot
 import CNNClass
-from utils import load_and_resize_image, get_data
+from utils import load_and_resize_image, get_data, cross_val, k_fold_cross_val
 from sklearn.metrics import accuracy_score
 
 TRAIN_DIR = "images/train"
@@ -29,7 +29,7 @@ model = CNNClass.Sequential(input_shape=INPUT_SHAPE)
 print("**Convolution Layer Start**")
 print("**Convolution Stage**")
 
-model.add(CNNClass.Conv2D(2, 3, 2, 2, 0, 2))
+model.add(CNNClass.Conv2D(2, 3, 3, 2, 0, 2))
 
 print("**Detector Stage**")
 model.add(CNNClass.Activation("relu"))
@@ -46,7 +46,10 @@ model.add(CNNClass.Dense(2))
 model.add(CNNClass.Activation("sigmoid", class_num=2))
 print("**Dense output**")
 
-model.train(train_images, train_val, epochs=10)
+model.train(train_images, train_val, epochs=3)
 pred = model.predict(test_images)
-print("Test Predictions\n", numpy.array(pred))
+print("Test Predictions\n", np.array(pred))
 print("Accuracy\n", accuracy_score(test_val, pred))
+
+# KFold Cross validation
+k_fold_cross_val(model, train_images, train_val, k=10)

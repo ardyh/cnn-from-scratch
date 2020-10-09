@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 import skimage.io
 from skimage.transform import resize
 from sklearn.model_selection import KFold
@@ -34,6 +35,15 @@ def k_fold_cross_val(model, X, y, k=10):
         print(f"Fold #{i}")
         X_train, y_train = X[train_idx], y[train_idx]
         X_test, y_test = X[test_idx], y[test_idx]
+        
+        train_images = []
+        test_images = []
+
+        for img in X_train:
+            train_images.append(load_and_resize_image(img, INPUT_SHAPE))
+
+        for img in X_test:
+            test_images.append(load_and_resize_image(img, INPUT_SHAPE))
 
         model.fit(X_train, y_train)
         preds = model.predict(X_test)
@@ -45,6 +55,7 @@ def k_fold_cross_val(model, X, y, k=10):
             'recall': recall_score(y, preds),
         })
 
+    pd.DataFrame(history).to_csv("history.csv")
     return history
 
 

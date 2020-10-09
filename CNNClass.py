@@ -164,12 +164,12 @@ class Conv2D:
 
         return padded_result
 
-    def convolution_calculation(self, input_matrix, conv_filter, padding_layer, stride):
+    def convolution_calculation(self, input_matrix, conv_filter, stride):
         #input_matrix shape = (mxn)
 
         #Initialize matrix result
-        output_shape = (((input_matrix.shape[0] - conv_filter.shape[0] + 2 * padding_layer) // stride + 1),
-                        ((input_matrix.shape[1] - conv_filter.shape[1] + 2 * padding_layer) // stride + 1))
+        output_shape = (((input_matrix.shape[0] - conv_filter.shape[0]) // stride + 1),
+                        ((input_matrix.shape[1] - conv_filter.shape[1]) // stride + 1))
         output_matrix = np.zeros(output_shape)
 
         input_length_idx = 0; output_length_idx = 0
@@ -208,8 +208,8 @@ class Conv2D:
         self.input = self.add_padding(self.input)
 
         #Feature map formula : (W - F + 2P) / S + 1
-        feature_map_shape = (((self.input.shape[0] - self.filter.shape[1] + 2 * self.padding_layer) // self.stride + 1),
-                            ((self.input.shape[1] - self.filter.shape[2] + 2 * self.padding_layer) // self.stride + 1),
+        feature_map_shape = (((self.input.shape[0] - self.filter.shape[1]) // self.stride + 1),
+                            ((self.input.shape[1] - self.filter.shape[2]) // self.stride + 1),
                             self.filter_number)
         
         # Initialize feature map output
@@ -219,11 +219,11 @@ class Conv2D:
             current_filter = self.filter[filter_num, :]
 
             if len(current_filter.shape) > 2:
-                convolution_result = self.convolution_calculation(self.input[:, :, 0], current_filter[:, :, 0], self.padding_layer, self.stride)
+                convolution_result = self.convolution_calculation(self.input[:, :, 0], current_filter[:, :, 0], self.stride)
                 for channel in range(1, current_filter.shape[-1]):
-                    convolution_result = convolution_result + self.convolution_calculation(self.input[:, :, channel], current_filter[:, :, channel], self.padding_layer, self.stride)
+                    convolution_result = convolution_result + self.convolution_calculation(self.input[:, :, channel], current_filter[:, :, channel], self.stride)
             else:
-                convolution_result = self.convolution_calculation(self.input, current_filter, self.padding_layer, self.stride)
+                convolution_result = self.convolution_calculation(self.input, current_filter, self.stride)
             
             feature_map[:, :, filter_num] = convolution_result + self.filter_bias[filter_num]
         
@@ -242,10 +242,12 @@ class Conv2D:
             self.delta_bias[i] = self.learning_rate * self.error_bias[i] + self.momentum * self.delta_bias[i]
 
 
-        #Calculate dE / dW (Error Weight)
+        # Calculate dE / dW (Error Weight)
+        # asumsi simetris input dan filternya
+        calculated_stride = (self.input.shape[0] - error.shape[0]) // (self.filter.shape[1] - 1)
         for channel in range (self.input.shape[-1]):
             for filter_num in range(error.shape[-1]):
-                product_matrix = self.convolution_calculation(self.input[:,:,channel], error[:,:,filter_num], self.padding_layer, self.stride)
+                product_matrix = self.convolution_calculation(self.input[:,:,channel], error[:,:,filter_num], calculated_stride)
                 self.error_filter[filter_num,:,:,channel] = product_matrix
                 
         # Update delta_filter
@@ -255,31 +257,30 @@ class Conv2D:
                     for k in range (self.delta_filter.shape[3]):
                         self.delta_filter[filter_num,i,j,k] = self.learning_rate * self.error_filter[filter_num,i,j,k] + self.momentum * self.delta_filter[filter_num,i,j,k]
 
+        # #Calculate dE / dX (Error Input)
+        # error = self.add_padding(error)
 
-        #Calculate dE / dX (Error Input)
-        error = self.add_padding(error)
-
-        #Output matrix formula : (W - F + 2P) / S + 1
-        output_matrix_shape = (((error.shape[0] - self.filter.shape[1] + 2 * self.padding_layer) // self.stride + 1),
-                            ((error.shape[1] - self.filter.shape[2] + 2 * self.padding_layer) // self.stride + 1),
-                            self.filter_number)
+        # #Output matrix formula : (W - F + 2P) / S + 1
+        # output_matrix_shape = (((error.shape[0] - self.filter.shape[1] + 2 * self.padding_layer) // self.stride + 1),
+        #                     ((error.shape[1] - self.filter.shape[2] + 2 * self.padding_layer) // self.stride + 1),
+        #                     self.filter_number)
         
-        # Initialize Output matrix output
-        output_matrix = np.zeros(output_matrix_shape)
+        # # Initialize Output matrix output
+        # output_matrix = np.zeros(output_matrix_shape)
 
-        for filter_num in range(self.filter.shape[0]):
-            current_filter = self.filter[filter_num, :]
+        # for filter_num in range(self.filter.shape[0]):
+        #     current_filter = self.filter[filter_num, :]
 
-            if len(current_filter.shape) > 2:
-                matrix_product = self.convolution_calculation(error[:, :, 0], current_filter[:, :, 0], self.padding_layer, self.stride)
-                for channel in range(1, current_filter.shape[-1]):
-                    matrix_product = matrix_product + self.convolution_calculation(error[:, :, channel], current_filter[:, :, channel], self.padding_layer, self.stride)
-            else:
-                matrix_product = self.convolution_calculation(error[:,:,filter_num], current_filter, self.padding_layer, self.stride)
+        #     if len(current_filter.shape) > 2:
+        #         matrix_product = self.convolution_calculation(error[:, :, 0], current_filter[:, :, 0], self.padding_layer, self.stride)
+        #         for channel in range(1, current_filter.shape[-1]):
+        #             matrix_product = matrix_product + self.convolution_calculation(error[:, :, channel], current_filter[:, :, channel], self.padding_layer, self.stride)
+        #     else:
+        #         matrix_product = self.convolution_calculation(error[:,:,filter_num], current_filter, self.padding_layer, self.stride)
             
-            output_matrix[:, :, filter_num] = matrix_product
+        #     output_matrix[:, :, filter_num] = matrix_product
         
-        self.passed_error = output_matrix.copy()
+        # self.passed_error = output_matrix.copy()
 
     def update_weight(self):
         #Update Bias
@@ -314,7 +315,9 @@ class Activation:
     def calculate_delta_output(self):
         # Assuming untuk output layer
         true_val = [1 if i == self.error_calc_input else 0 for i in range(self.class_num)]
+        class_errors = []
         for y_true_val, output_val in zip(true_val, self.output):
+            
             class_error_term = 0
             if (self.function_name == "sigmoid"):
                 # Buat hidden tinggal ambil term: output_val * (1 - output_val) 
@@ -326,21 +329,21 @@ class Activation:
             else:
                 raise Exception("Invalid activation function name")
         
-            self.passed_error.append(class_error_term) 
+            class_errors.append(class_error_term)
         
-        self.passed_error = np.array(self.passed_error)
+        self.passed_error = np.array(class_errors)
     
     # Assumption only works for layers where output dimension of next layer is equal to activation layer's input dimension
     def calculate_error(self):
         # activation function defaults to relu
-        if (function_name == "sigmoid"):
+        if (self.function_name == "sigmoid"):
             v_activation = np.vectorize(self.d_sigmoid)
-        elif (function_name == "relu"):
+        elif (self.function_name == "relu"):
             v_activation = np.vectorize(self.d_relu)
         else:
             raise Exception("Invalid activation function name")
 
-        curr_error = v_activation(self.output)
+        self.passed_error = v_activation(self.prev_error)
         
         # Asumsi: 
         #     - error dikali dari yang paling dekat output layer dulu
@@ -355,7 +358,6 @@ class Activation:
         # else: # if no intersection
         #     raise Exception("Cannot do matrix multiplication. No intersecting dimensions")
 
-        self.passed_error = self.prev_error.copy()
         return None
 
     def d_sigmoid(self, out):
@@ -523,7 +525,7 @@ class Flatten:
         return None
 
     def calculate_error(self):
-        error = self.prev_error.copy()
+        error = self.prev_error.copy() # excluding bias from prev error
         self.passed_error = error.reshape(self.input.shape)
 
     def update_weight(self):
@@ -576,11 +578,7 @@ class Dense:
         self.passed_error = np.matmul(
             self.prev_error.reshape(1, self.prev_error.size),
             self.weights
-        )
-
-        print("prev_error", self.prev_error.shape)
-        print("weights", self.weights.shape)
-        print("weights", self.input.shape)
+        )[:, :-1] # excluding bias
 
         # calculate derived error for layer weight
         # dNet/dWeight = input
