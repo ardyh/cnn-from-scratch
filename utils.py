@@ -18,11 +18,10 @@ def get_data(train_dir):
     img_paths = []
     for idx, (dirname, subdirs, filenames) in enumerate(os.walk(train_dir)):
         if (idx == 0):
-            class_labels = subdirs
-            pass
+            target_names = subdirs
         else:
-            target_val.append(idx - 1)
             for filename in filenames:
+                target_val.append(idx - 1)
                 img_paths.append(os.path.join(dirname, filename))
 
     return target_names, target_val, img_paths

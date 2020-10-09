@@ -63,7 +63,6 @@ class Sequential:
         return None
 
     def predict(self, X):
-
         y_pred = []
         for img in X:
             self.forwardprop(img)

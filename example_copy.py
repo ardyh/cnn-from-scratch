@@ -9,8 +9,6 @@ TRAIN_DIR = "images/train"
 TEST_DIR = "images/test"
 INPUT_SHAPE = (100, 100, 3)
 
-print(numpy.argmax(numpy.array([0,5])))
-
 # Reading the image
 train_names, train_val, train_paths = get_data(TRAIN_DIR)
 test_names, test_val, test_paths = get_data(TEST_DIR)
@@ -24,7 +22,6 @@ for img in train_paths:
 for img in test_paths:
     test_images.append(load_and_resize_image(img, INPUT_SHAPE))
 
-print(train_images[0].shape)
 # Define model
 model = CNNClass.Sequential(input_shape=INPUT_SHAPE)
 
@@ -49,6 +46,7 @@ model.add(CNNClass.Dense(2))
 model.add(CNNClass.Activation("sigmoid"))
 print("**Dense output**")
 
-model.train(train_images, train_val, batch_size =1)
+model.train(train_images, train_val, epochs=10)
 pred = model.predict(test_images)
-print("Accuracy", accuracy_score(test_val, pred))
+print("Test Predictions\n", np.array(pred))
+print("Accuracy\n", accuracy_score(test_val, pred))
