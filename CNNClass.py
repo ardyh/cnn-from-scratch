@@ -298,10 +298,11 @@ class Conv2D:
 
 # Activation
 class Activation:
-    def __init__(self, function_name="relu"):
+    def __init__(self, function_name="relu", class_num=None):
         self.input = []
         self.output = []
         self.function_name = function_name
+        self.class_num = class_num
         # Error calculation, backprop
         self.error_calc_input = []
         self.prev_error = []
@@ -313,8 +314,7 @@ class Activation:
 
     def calculate_delta_output(self):
         # Assuming untuk output layer
-        class_num = 2 # Hardcoded because of binary class only
-        true_val = [1 if i == self.error_calc_input else 0 for i in range(class_num)]
+        true_val = [1 if i == self.error_calc_input else 0 for i in range(self.class_num)]
         for y_true_val, output_val in zip(true_val, self.output):
             class_error_term = 0
             if (self.function_name == "sigmoid"):

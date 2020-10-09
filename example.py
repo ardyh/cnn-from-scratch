@@ -44,7 +44,7 @@ model.add(CNNClass.Flatten())
 # l1_dense_output = numpycnn.dense(l1_flat, 10, "relu")
 # After
 model.add(CNNClass.Dense(2))
-model.add(CNNClass.Activation("sigmoid"))
+model.add(CNNClass.Activation("sigmoid", class_num=2))
 print("**Dense output**")
 print("weights before update")
 print(model.layers[-2].weights)

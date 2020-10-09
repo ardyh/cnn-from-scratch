@@ -43,7 +43,7 @@ print("**Dense layer**")
 model.add(CNNClass.Flatten())
 
 model.add(CNNClass.Dense(2))
-model.add(CNNClass.Activation("sigmoid"))
+model.add(CNNClass.Activation("sigmoid", class_num=2))
 print("**Dense output**")
 
 model.train(train_images, train_val, epochs=10)
