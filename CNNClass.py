@@ -75,7 +75,13 @@ class Sequential:
         return None
 
     def predict(self, X):
-        return None
+
+        y_pred = []
+        for img in X:
+            self.forwardprop(img)
+            y_pred.append(self.final_output)
+
+        return y_pred
     
 # Conv Layer
 class Conv2D:
