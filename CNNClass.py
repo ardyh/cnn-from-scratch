@@ -232,9 +232,7 @@ class Conv2D:
                 for j in range (self.delta_filter.shape[2]):
                     for k in range (self.delta_filter.shape[3]):
                         self.delta_filter[filter_num,i,j,k] = self.learning_rate * self.error_filter[filter_num,i,j,k] + self.momentum * self.delta_filter[filter_num,i,j,k]
-                             
-        #Update Weight
-        # self.update_weight()
+
 
         #Calculate dE / dX (Error Input)
         error = self.add_padding(error)
@@ -259,7 +257,7 @@ class Conv2D:
             
             output_matrix[:, :, filter_num] = matrix_product
         
-        return output_matrix
+        self.passed_error = output_matrix.copy()
 
     def update_weight(self):
         #Update Bias
