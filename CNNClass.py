@@ -220,6 +220,7 @@ class Conv2D:
         for i in range(len(self.delta_bias)):
             self.delta_bias[i] = self.learning_rate * self.error_bias[i] + self.momentum * self.delta_bias[i]
 
+
         #Calculate dE / dW (Error Weight)
         for channel in range (self.input.shape[-1]):
             for filter_num in range(error.shape[-1]):
@@ -481,13 +482,8 @@ class Pooling:
 
                     result[int(x_pos), int(y_pos), channel] = value
         
-        # return result
         self.passed_error = result.copy()   
 
-        # self.passed_error = np.matmul(
-        #     self.prev_error,
-        #     d_relu_d_out.reshape(d_relu_d_out.size, 1)
-        # )
 
     def update_weight(self):
         #No weight to be upate in pooling stage
@@ -506,7 +502,8 @@ class Flatten:
         return None
 
     def calculate_error(self):
-        self.passed_error = self.prev_error.copy()
+        error = self.prev_error.copy()
+        self.passed_error = error.reshape(self.input.shape)
 
     def update_weight(self):
         return None
