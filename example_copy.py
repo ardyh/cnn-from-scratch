@@ -8,6 +8,8 @@ from utils import load_image, get_data
 TRAIN_DIR = "train"
 TEST_DIR = "test"
 
+print(numpy.argmax(numpy.array([0,5])))
+
 # Reading the image
 train_names, train_val, train_paths = get_data(TRAIN_DIR)
 test_names, test_val, test_paths = get_data(TEST_DIR)
@@ -42,7 +44,7 @@ print("**End of Convolution Layer**\n")
 print("**Dense layer**")
 model.add(CNNClass.Flatten())
 
-model.add(CNNClass.Dense(1))
+model.add(CNNClass.Dense(2))
 model.add(CNNClass.Activation("sigmoid"))
 print("**Dense output**")
 

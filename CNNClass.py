@@ -79,7 +79,7 @@ class Sequential:
         y_pred = []
         for img in X:
             self.forwardprop(img)
-            y_pred.append(self.final_output)
+            y_pred.append(np.argmax(self.final_output))
 
         return y_pred
     
