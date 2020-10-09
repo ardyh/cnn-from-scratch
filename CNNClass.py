@@ -259,29 +259,29 @@ class Conv2D:
                         self.delta_filter[filter_num,i,j,k] = self.learning_rate * self.error_filter[filter_num,i,j,k] + self.momentum * self.delta_filter[filter_num,i,j,k]
 
         # #Calculate dE / dX (Error Input)
-        error = self.add_padding(error)
+        # error = self.add_padding(error)
 
-        #Output matrix formula : (W - F + 2P) / S + 1
-        output_matrix_shape = (((error.shape[0] - self.filter.shape[1] + 2 * self.padding_layer) // self.stride + 1),
-                            ((error.shape[1] - self.filter.shape[2] + 2 * self.padding_layer) // self.stride + 1),
-                            self.filter_number)
+        # #Output matrix formula : (W - F + 2P) / S + 1
+        # output_matrix_shape = (((error.shape[0] - self.filter.shape[1] + 2 * self.padding_layer) // self.stride + 1),
+        #                     ((error.shape[1] - self.filter.shape[2] + 2 * self.padding_layer) // self.stride + 1),
+        #                     self.filter_number)
         
-        # Initialize Output matrix output
-        output_matrix = np.zeros(output_matrix_shape)
+        # # Initialize Output matrix output
+        # output_matrix = np.zeros(output_matrix_shape)
 
-        for filter_num in range(self.filter.shape[0]):
-            current_filter = self.filter[filter_num, :]
+        # for filter_num in range(self.filter.shape[0]):
+        #     current_filter = self.filter[filter_num, :]
 
-            if len(current_filter.shape) > 2:
-                matrix_product = self.convolution_calculation(error[:, :, 0], current_filter[:, :, 0], self.padding_layer, self.stride, self.stride)
-                for channel in range(1, current_filter.shape[-1]):
-                    matrix_product = matrix_product + self.convolution_calculation(error[:, :, channel], current_filter[:, :, channel], self.padding_layer, self.stride, self.stride)
-            else:
-                matrix_product = self.convolution_calculation(error[:,:,filter_num], current_filter, self.padding_layer, self.stride, self.stride)
+        #     if len(current_filter.shape) > 2:
+        #         matrix_product = self.convolution_calculation(error[:, :, 0], current_filter[:, :, 0], self.stride, self.stride)
+        #         for channel in range(1, current_filter.shape[-1]):
+        #             matrix_product = matrix_product + self.convolution_calculation(error[:, :, channel], current_filter[:, :, channel], self.stride, self.stride)
+        #     else:
+        #         matrix_product = self.convolution_calculation(error[:,:,filter_num], current_filter, self.stride, self.stride)
             
-            output_matrix[:, :, filter_num] = matrix_product
+        #     output_matrix[:, :, filter_num] = matrix_product
         
-        self.passed_error = output_matrix.copy()
+        # self.passed_error = output_matrix.copy()
 
     def update_weight(self):
         #Update Bias
@@ -577,10 +577,6 @@ class Dense:
 
         # Init weight
         input_size = 1
-        # for shape in input_shape:
-        #     input_size *= shape
-        # self.weights = np.random.uniform(-1, 1, (class_num, input_size + 1)) # +1 for bias
-        # self.reset_delta_weight()
 
         return None
 

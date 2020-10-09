@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import skimage.io
 from skimage.transform import resize
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, train_test_split
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 def get_data(train_dir):
@@ -51,8 +51,24 @@ def k_fold_cross_val(model, X, y, input_shape, k=10):
 
         i+=1
 
-    pd.DataFrame(history).to_csv("history.csv")
+    pd.DataFrame(history).to_csv("history_kfold.csv")
     return history
+
+def train_test_split_sk(model, X, y, input_shape, test_size=0.1):
+    X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=test_size)
+
+    model.train(X_train, y_train, epochs=10)
+    preds = model.predict(X_test)
+
+    history = [{
+        'accuracy': accuracy_score(y_test, preds),
+        'f1': f1_score(y_test, preds),
+        'precision': precision_score(y_test, preds),
+        'recall': recall_score(y_test, preds),
+    }]
+
+    pd.DataFrame(history).to_csv("history_split.csv")
 
 
 def load_and_resize_image(image_path, image_shape):

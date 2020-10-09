@@ -1,52 +1,72 @@
-import numpy
+import numpy as np
+import pickle
+import pandas as pd
 import matplotlib
 import matplotlib.pyplot
-import ForwardProp as numpycnn
-from utils import load_image
+import CNNClass
+from utils import load_and_resize_image, get_data, k_fold_cross_val, train_test_split_sk
+from sklearn.metrics import accuracy_score
 
-BASE_IMG_DIR = "images/sandbox/"
+TRAIN_DIR = "images/train"
+TEST_DIR = "images/test"
+INPUT_SHAPE = (100, 100, 3)
 
-if __name__ == "__main__":
-    # Reading the image
-    img = numpycnn.load_image(f"{BASE_IMG_DIR}cat.38.jpg")
+# Reading the image
+train_names, train_val, train_paths = get_data(TRAIN_DIR)
+test_names, test_val, test_paths = get_data(TEST_DIR)
 
-    #Convoluting the image
-    print("**Convolution Layer Start**")
-    print("**Convolution Stage**")
-    l1_feature_map = numpycnn.convolution_stage(img, 2, 3, 2, 2, 0, 2) # (input_matrix, filter_number, filter_size_length, filter_size_width, pad_layer, padded_number, stride=1):
-    print("**Detector Stage**")
-    l1_feature_map_relu = numpycnn.activation(l1_feature_map)
-    print("**Pooling Stage**")
-    l1_feature_map_relu_pool = numpycnn.pool_stage(l1_feature_map_relu, 2, 2, 2)
-    print("**End of Convolution Layer**\n")
+train_images = []
+test_images = []
 
-    print("**Dense layer**")
-    l1_flat = numpycnn.flatten(l1_feature_map_relu_pool)
-    l1_dense_output = numpycnn.dense(l1_flat, 10, "relu")
-    print("**Dense output**")
-    print(l1_dense_output)
+for img in train_paths:
+    train_images.append(load_and_resize_image(img, INPUT_SHAPE))
 
-    # Showing the image output of each layer
-    fig1, ax1 = matplotlib.pyplot.subplots(nrows=3, ncols = l1_feature_map.shape[2])
+for img in test_paths:
+    test_images.append(load_and_resize_image(img, INPUT_SHAPE))
 
-    for i in range(l1_feature_map.shape[2]):
-        ax1[0, i].imshow(l1_feature_map[:, :, i])
-        ax1[0, i].get_xaxis().set_ticks([])
-        ax1[0, i].get_yaxis().set_ticks([])
-        ax1[0, i].set_title("L1-Convolution " + str(i + 1))
+train_images = np.array(train_images)
+test_images = np.array(test_images)
+train_val = np.array(train_val)
+test_val = np.array(test_val)
 
-    for i in range(l1_feature_map_relu.shape[2]):
-        ax1[1, i].imshow(l1_feature_map_relu[:, :, i])
-        ax1[1, i].get_xaxis().set_ticks([])
-        ax1[1, i].get_yaxis().set_ticks([])
-        ax1[1, i].set_title("L1-Detector " + str(i + 1))
+# Define model
+model = CNNClass.Sequential(input_shape=INPUT_SHAPE)
 
-    for i in range(l1_feature_map_relu_pool.shape[2]):
-        ax1[2, i].imshow(l1_feature_map_relu_pool[:, :, i])
-        ax1[2, i].get_xaxis().set_ticks([])
-        ax1[2, i].get_yaxis().set_ticks([])
-        ax1[2, i].set_title("L1-Pooling" + str(i + 1))
+# Convoluting the image
+print("**Convolution Layer Start**")
+print("**Convolution Stage**")
 
+model.add(CNNClass.Conv2D(2, 3, 3, 2, 0, 2))
 
-    matplotlib.pyplot.savefig(f"{BASE_IMG_DIR}sample_layer_output.png", bbox_inches="tight")
-    matplotlib.pyplot.close(fig1)
+print("**Detector Stage**")
+model.add(CNNClass.Activation("relu"))
+
+print("**Pooling Stage**")
+model.add(CNNClass.Pooling(2, 2, 2))
+
+print("**End of Convolution Layer**\n")
+
+print("**Dense layer**")
+model.add(CNNClass.Flatten())
+
+model.add(CNNClass.Dense(2))
+model.add(CNNClass.Activation("sigmoid", class_num=2))
+print("**Dense output**")
+
+# Train Test Split
+train_test_split_sk(model, train_images, train_val, INPUT_SHAPE)
+
+# KFold Cross validation
+k_fold_cross_val(model, train_images, train_val, INPUT_SHAPE)
+
+# Predicting Test
+model.train(train_images, train_val, epochs=10)
+pred = model.predict(test_images)
+print("Accuracy\n", accuracy_score(test_val, pred))
+
+# Menyimpan model ke file eksternal
+filename = 'finalized_model.sav'
+pickle.dump(model, open(filename, 'wb'))
+
+# Membaca model
+loaded_model = pickle.load(open(filename, 'rb'))
