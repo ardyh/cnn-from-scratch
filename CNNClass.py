@@ -468,18 +468,17 @@ class Pooling:
 
         return None
 
-    def d_relu_d_out(self):
-        # Derivative of Relu over output
-        # Result_shape = self.input_shape and error_shape = self.output_shape
+    def backprop(self, error):
+        #Result_shape = self.input_shape and error_shape = self.output_shape
         result = np.zeros(self.input.shape)
 
         for channel in range(self.output.shape[-1]):
+
             for i in range(self.output.shape[0]):
                 for j in range(self.output.shape[1]):
-                    x_pos = self.output_position_x[i, j, channel]
-                    y_pos = self.output_position_y[i, j, channel]
-                    # value = error[i, j, channel]
-                    value = self.output[i, j, channel]
+                    x_pos = self.output_position_x[i,j,channel]
+                    y_pos = self.output_position_y[i,j,channel]
+                    value = error[i,j,channel]
 
                     result[int(x_pos), int(y_pos), channel] = value
         
