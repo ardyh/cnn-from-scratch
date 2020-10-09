@@ -1,17 +1,11 @@
 import numpy as np
-from utils import load_image
 
 class Sequential:
-    def __init__(self, n_epoch=50, learning_rate=0.5, momentum=0.1):
+    def __init__(self, input_shape, learning_rate=0.5, momentum=0.1):
         self.input = []
         self.layers = [] 
-        # DEBUG
-        self.conv_layer_final_idx = 3
-        self.feature_layer_output = []
-        # DEBUG END
         self.final_output = []
-        
-        self.n_epoch = n_epoch
+        self.input_shape = input_shape
         self.learning_rate = learning_rate
         self.momentum = momentum
 
@@ -27,14 +21,8 @@ class Sequential:
             else:
                 layer.input = prev_output
                 
-            layer.init_params(layer.input.shape)
             layer.run()
             prev_output = layer.output.copy()
-
-            # DEBUG
-            if idx < self.conv_layer_final_idx:
-                self.feature_layer_output.append(layer.output)
-            # DEBUG END
         
         self.final_output = prev_output
 
@@ -45,30 +33,30 @@ class Sequential:
             if idx == 0: # If last layer
                 layer.error_calc_input = y_instance
             else:
-                layer.error_calc_input = error_calc_output
                 layer.prev_error = prev_error
             
             prev_error = layer.passed_error
-            error_calc_output = layer.error_calc_output
 
-    def train(self, X, y, batch_size):
+        if (is_update):
+            for layer in self.layers:
+                layer.update_weight()
+
+    def train(self, X, y, epochs=50, batch_size=5):
         instance_size = len(X)
         
         # Initialize parameters for every layer
-        sample_instance = X[0]
         for layer in self.layers:
-            layer.init_params(X[0].shape)
+            layer.init_params(self.input_shape)
 
         # iterate every epoch
-        for epoch in list(range(self.n_epoch)):
+        for epoch in list(range(epochs)):
+            print(f"Epoch {epoch}")
             # iterate every instance
             for instance_idx, instance in enumerate(zip(X, y)):
                 X_instance = instance[0]; y_instance = instance[1]
                 
                 # If last instance or multiple of batch, update params
-                is_update = False
-                if ((instance_idx == instance_size) or (instance_idx % batch_size == 0)):
-                    is_update = True
+                is_update = (instance_idx == instance_size) or (instance_idx % batch_size == 0)
                 
                 self.forwardprop(X_instance)
                 self.backprop(y_instance, is_update)
@@ -85,7 +73,7 @@ class Sequential:
     
 # Conv Layer
 class Conv2D:
-    def __init__(self, filter_number, filter_size_length, filter_size_width, padding_layer=0, padded_number=0, stride=1, learning_rate=0.1, momentum=0.5):
+    def __init__(self, filter_number, filter_size_length, filter_size_width, padding_layer=0, padded_number=0, stride=1, learning_rate=0.1, momentum=0.01):
         self.input = []
         self.output = []
         
@@ -103,13 +91,16 @@ class Conv2D:
         self.delta_bias = []
         self.error_bias = []
 
+        self.prev_error = []
+        self.passed_error = []
+
         #Define update weight variables
         self.learning_rate = learning_rate
         self.momentum = momentum
 
     def init_params(self, input_shape):
         #Init Filter
-        self.init_filter()
+        self.init_filter(input_shape)
 
         #Initialize bias with 0
         self.filter_bias = np.zeros(self.filter.shape[0])
@@ -122,15 +113,14 @@ class Conv2D:
         self.error_filter = np.zeros(self.filter.shape)
         self.error_bias = np.zeros(self.filter_bias.shape)
 
-    # def init_filter(self, filter_number, filter_size_length, filter_size_width, input_shape):
-    # Asumsi selalu 2D, maka input_shape ga butuh
-    def init_filter(self):
+    def init_filter(self, input_shape):
+        # Asumsi selalu 2D, maka ga butuh validasi input shape, hanya channel
         # set the lower and upper bound of randomized parameters to be intialized in filter
         LOWER_BOUND = -10
         UPPER_BOUND = 10
 
         convolution_filter = []
-        filter_channel = self.input.shape[-1]
+        filter_channel = input_shape[-1]
 
         convolution_filter = np.zeros((self.filter_number, self.filter_size_length, self.filter_size_width, filter_channel))
         for i in range(self.filter_number):
@@ -220,22 +210,32 @@ class Conv2D:
         self.output = feature_map
         return None
 
-    def backprop(self, error):
+    # def backprop(self, error):
+    def calculate_error(self):
         #Calculate error bias 
+        error = self.prev_error.copy() # Line tambahan, kalo ntar error coba debug ini
         for i in range (error.shape[-1]):
             self.error_bias[i] = np.sum(error[:,:,i])
-
+        
+        # Update delta bias
+        for i in range(len(self.delta_bias)):
+            self.delta_bias[i] = self.learning_rate * self.error_bias[i] + self.momentum * self.delta_bias[i]
 
         #Calculate dE / dW (Error Weight)
         for channel in range (self.input.shape[-1]):
             for filter_num in range(error.shape[-1]):
                 product_matrix = self.convolution_calculation(self.input[:,:,channel], error[:,:,filter_num], self.padding_layer, self.stride)
                 self.error_filter[filter_num,:,:,channel] = product_matrix
-
-
+                
+        # Update delta_filter
+        for filter_num in range(self.delta_filter.shape[0]):
+            for i in range (self.delta_filter.shape[1]):
+                for j in range (self.delta_filter.shape[2]):
+                    for k in range (self.delta_filter.shape[3]):
+                        self.delta_filter[filter_num,i,j,k] = self.learning_rate * self.error_filter[filter_num,i,j,k] + self.momentum * self.delta_filter[filter_num,i,j,k]
+                             
         #Update Weight
         # self.update_weight()
-
 
         #Calculate dE / dX (Error Input)
         error = self.add_padding(error)
@@ -265,7 +265,7 @@ class Conv2D:
     def update_weight(self):
         #Update Bias
         for i in range(len(self.delta_bias)):
-            self.delta_bias[i] = self.learning_rate * self.error_bias[i] + self.momentum * self.delta_bias[i]
+            # self.delta_bias[i] = self.learning_rate * self.error_bias[i] + self.momentum * self.delta_bias[i]
             self.filter_bias[i] -= self.delta_bias[i]
 
         #Update weight
@@ -273,7 +273,7 @@ class Conv2D:
             for i in range (self.delta_filter.shape[1]):
                 for j in range (self.delta_filter.shape[2]):
                     for k in range (self.delta_filter.shape[3]):
-                        self.delta_filter[filter_num,i,j,k] = self.learning_rate * self.error_filter[filter_num,i,j,k] + self.momentum * self.delta_filter[filter_num,i,j,k]
+                        # self.delta_filter[filter_num,i,j,k] = self.learning_rate * self.error_filter[filter_num,i,j,k] + self.momentum * self.delta_filter[filter_num,i,j,k]
                         self.filter[filter_num,i,j,k] -= self.delta_filter[filter_num,i,j,k]
 
 # Activation
@@ -314,10 +314,7 @@ class Activation:
         print("self.passed_error_act", self.passed_error)
     
     # Assumption only works for layers where output dimension of next layer is equal to activation layer's input dimension
-    def calculate_delta_hidden(self):
-        # Mirip kaya calculate_delta_output, term yang digunakan sama, tapi perkalian matriks, bukan perkalian bilangan 
-        # untuk setiap value di output, terapkan formula diatas
-
+    def calculate_error(self):
         # activation function defaults to relu
         if (function_name == "sigmoid"):
             v_activation = np.vectorize(self.d_sigmoid)
@@ -334,13 +331,14 @@ class Activation:
         # Maka: delta = prev_error * curr_error; 
         
         # Cari dimensi yang sama dari prev_error
-        if (self.prev_error.shape[1] == curr_error.shape[0]): #n_col(prev_error) == n_rows(curr_error), langsung kali
-            self.error = np.matmul(self.prev_error, curr_error)
-        elif (self.prev_error.shape[1] != curr_error.shape[0]): # Kalo n_col(prev_error) != n_rows(curr_error), transpose
-            self.error = np.matmul(self.prev_error, curr_error.transpose())
-        else: # if no intersection
-            raise Exception("Cannot do matrix multiplication. No intersecting dimensions")
+        # if (self.prev_error.shape[1] == curr_error.shape[0]): #n_col(prev_error) == n_rows(curr_error), langsung kali
+        #     self.error = np.matmul(self.prev_error, curr_error)
+        # elif (self.prev_error.shape[1] != curr_error.shape[0]): # Kalo n_col(prev_error) != n_rows(curr_error), transpose
+        #     self.error = np.matmul(self.prev_error, curr_error.transpose())
+        # else: # if no intersection
+        #     raise Exception("Cannot do matrix multiplication. No intersecting dimensions")
 
+        self.passed_error = self.prev_error.copy()
         return None
 
     def d_sigmoid(self, out):
@@ -385,7 +383,7 @@ class Activation:
         return result
 
     def update_weight(self):
-        #No weight to be upate in detection stage
+        #No weight to be updated in detection stage
         return None
 
 # Pooling Layer
@@ -399,6 +397,9 @@ class Pooling:
         self.pool_width = pool_width 
         self.stride = stride 
         self.mode = mode 
+        # Error calculation, backprop
+        self.prev_error = []
+        self.passed_error = []
 
     def init_params(self, input_shape):
         return None
@@ -468,29 +469,28 @@ class Pooling:
 
         return None
 
-    def backprop(self, error):
+    # def backprop(self, error):
+    def calculate_error(self):
         #Result_shape = self.input_shape and error_shape = self.output_shape
         result = np.zeros(self.input.shape)
 
         for channel in range(self.output.shape[-1]):
-
             for i in range(self.output.shape[0]):
                 for j in range(self.output.shape[1]):
                     x_pos = self.output_position_x[i,j,channel]
                     y_pos = self.output_position_y[i,j,channel]
-                    value = error[i,j,channel]
+                    # value = error[xi,j,channel]
+                    value = self.prev_error[i,j,channel]
 
                     result[int(x_pos), int(y_pos), channel] = value
         
-        return result
+        # return result
+        self.passed_error = result.copy()   
 
-    def calculate_error(self):
-        d_relu_d_out = self.d_relu_d_out()
-
-        self.passed_error = np.matmul(
-            self.prev_error,
-            d_relu_d_out.reshape(d_relu_d_out.size, 1)
-        )
+        # self.passed_error = np.matmul(
+        #     self.prev_error,
+        #     d_relu_d_out.reshape(d_relu_d_out.size, 1)
+        # )
 
     def update_weight(self):
         #No weight to be upate in pooling stage
@@ -511,6 +511,9 @@ class Flatten:
     def calculate_error(self):
         self.passed_error = self.prev_error.copy()
 
+    def update_weight(self):
+        return None
+
     def run(self):
         output_layer = self.input.copy()
         self.output = np.ravel(output_layer)
@@ -528,7 +531,6 @@ class Dense:
         self.learning_rate = learning_rate
         # Error calculation, backprop
         self.delta_weight = []
-        self.error_calc_input = [] # assume it's like y_true, but it can be propagated to other layers
         self.prev_error = []
         self.passed_error = []
         self.error = []
@@ -544,7 +546,6 @@ class Dense:
         input_size = 1
         for shape in input_shape:
             input_size *= shape
-        # input_size = dense_input.size
         self.weights = np.random.uniform(-1, 1, (class_num, input_size + 1)) # +1 for bias
         
         self.reset_delta_weight()
@@ -574,14 +575,6 @@ class Dense:
         # Calculate delta_weight with momentum
         # Assumption: delta_weight(n) = error + alpha * delta_weight(n-1)
         self.delta_weight = self.error + self.momentum * self.delta_weight
-
-        # DEBUG
-        print("self.weights_dense", self.weights, self.weights.shape)
-        print("self.output_dense", self.output, self.output.shape)
-        print("self.prev_error_dense", self.prev_error, self.prev_error.shape)
-        print("self.error_dense", self.error, self.error.shape)
-        print("self.delta_weight_dense", self.delta_weight, self.delta_weight.shape)
-        # DEBUG END
 
     def update_weight(self):
         # Assumption: weight(n) = weight(n-1) - lr * delta_weight(n-1)

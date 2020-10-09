@@ -1,12 +1,13 @@
 import numpy
 import matplotlib
 import matplotlib.pyplot
-import ForwardProp as numpycnn
 import CNNClass
-from utils import load_image, get_data
+from utils import load_and_resize_image, get_data
+from sklearn.metrics import accuracy_score
 
-TRAIN_DIR = "train"
-TEST_DIR = "test"
+TRAIN_DIR = "images/train"
+TEST_DIR = "images/test"
+INPUT_SHAPE = (100, 100, 3)
 
 print(numpy.argmax(numpy.array([0,5])))
 
@@ -18,14 +19,14 @@ train_images = []
 test_images = []
 
 for img in train_paths:
-    train_images.append(load_image(img))
+    train_images.append(load_and_resize_image(img, INPUT_SHAPE))
 
 for img in test_paths:
-    test_images.append(load_image(img))
+    test_images.append(load_and_resize_image(img, INPUT_SHAPE))
 
 print(train_images[0].shape)
 # Define model
-model = CNNClass.Sequential()
+model = CNNClass.Sequential(input_shape=INPUT_SHAPE)
 
 # Convoluting the image
 print("**Convolution Layer Start**")
@@ -49,4 +50,5 @@ model.add(CNNClass.Activation("sigmoid"))
 print("**Dense output**")
 
 model.train(train_images, train_val, batch_size =1)
-model.predict(test_images)
+pred = model.predict(test_images)
+print("Accuracy", accuracy_score(test_val, pred))

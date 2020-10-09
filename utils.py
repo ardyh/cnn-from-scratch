@@ -49,10 +49,10 @@ def k_fold_cross_val(model, X, y, k=10):
     return history
 
 
-def load_image(image_path):
+def load_and_resize_image(image_path, image_shape):
     try:
         raw_img = skimage.io.imread(image_path)
-        raw_img = resize(raw_img,(100,100))
+        raw_img = resize(raw_img, image_shape)
     except:
         raise Exception("Failed to load image")
 

@@ -69,7 +69,6 @@ model.layers[-3].prev_error = model.layers[-2].passed_error.copy()
 model.layers[-3].calculate_error()
 print("**Pooling**")
 
-
 print("weights after update")
 print(model.layers[-2].weights)
 model_output = model.final_output
