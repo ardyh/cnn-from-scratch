@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 import skimage.io
 from skimage.transform import resize
@@ -27,25 +28,18 @@ def get_data(train_dir):
 
     return target_names, target_val, img_paths
 
-def k_fold_cross_val(model, X, y, k=10):
+def k_fold_cross_val(model, X, y, input_shape, k=10):
     history = []
     kfold = KFold(n_splits=k)
-
-    for i, (train_idx, test_idx) in enumerate(kfold.split(X)):
+    i = 0
+    for train_idx, test_idx in kfold.split(X):
         print(f"Fold #{i}")
-        X_train, y_train = X[train_idx], y[train_idx]
-        X_test, y_test = X[test_idx], y[test_idx]
-        
-        train_images = []
-        test_images = []
+        X_train = X[train_idx]
+        y_train = y[train_idx]
+        X_test = X[test_idx]
+        y_test = y[test_idx]
 
-        for img in X_train:
-            train_images.append(load_and_resize_image(img, INPUT_SHAPE))
-
-        for img in X_test:
-            test_images.append(load_and_resize_image(img, INPUT_SHAPE))
-
-        model.train(X_train, y_train, epochs=5)
+        model.train(X_train, y_train, epochs=6)
         preds = model.predict(X_test)
 
         history.append({
@@ -54,6 +48,8 @@ def k_fold_cross_val(model, X, y, k=10):
             'precision': precision_score(y, preds),
             'recall': recall_score(y, preds),
         })
+
+        i+=1
 
     pd.DataFrame(history).to_csv("history.csv")
     return history

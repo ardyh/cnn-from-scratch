@@ -336,14 +336,26 @@ class Activation:
     # Assumption only works for layers where output dimension of next layer is equal to activation layer's input dimension
     def calculate_error(self):
         # activation function defaults to relu
-        if (self.function_name == "sigmoid"):
-            v_activation = np.vectorize(self.d_sigmoid)
-        elif (self.function_name == "relu"):
-            v_activation = np.vectorize(self.d_relu)
-        else:
-            raise Exception("Invalid activation function name")
+        # if (self.function_name == "sigmoid"):
+        #     v_activation = np.vectorize(self.d_sigmoid)
+        # elif (self.function_name == "relu"):
+        #     v_activation = np.vectorize(self.d_relu)
+        # else:
+        #     raise Exception("Invalid activation function name")
 
-        self.passed_error = v_activation(self.prev_error)
+        # self.passed_error = v_activation(self.prev_error)
+
+        result = np.zeros(self.output.shape)
+
+        for channel in range(self.output.shape[-1]):
+            for i in range(self.output.shape[0]):
+                for j in range(self.output.shape[1]):
+                    if(self.output[i,j,channel] > 0):
+                        result[i,j,channel] = self.prev_error[i,j,channel]
+                    else:
+                        result[i,j,channel] = 0
+        
+        self.passed_error = result.copy()
         
         # Asumsi: 
         #     - error dikali dari yang paling dekat output layer dulu

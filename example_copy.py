@@ -22,6 +22,11 @@ for img in train_paths:
 for img in test_paths:
     test_images.append(load_and_resize_image(img, INPUT_SHAPE))
 
+train_images = np.array(train_images)
+test_images = np.array(test_images)
+train_val = np.array(train_val)
+test_val = np.array(test_val)
+
 # Define model
 model = CNNClass.Sequential(input_shape=INPUT_SHAPE)
 
@@ -46,10 +51,10 @@ model.add(CNNClass.Dense(2))
 model.add(CNNClass.Activation("sigmoid", class_num=2))
 print("**Dense output**")
 
-model.train(train_images, train_val, epochs=3)
-pred = model.predict(test_images)
-print("Test Predictions\n", np.array(pred))
-print("Accuracy\n", accuracy_score(test_val, pred))
+# model.train(train_images, train_val, epochs=30)
+# pred = model.predict(test_images)
+# print("Test Predictions\n", np.array(pred))
+# print("Accuracy\n", accuracy_score(test_val, pred))
 
 # KFold Cross validation
-k_fold_cross_val(model, train_images, train_val, k=10)
+k_fold_cross_val(model, train_images, train_val, INPUT_SHAPE)
