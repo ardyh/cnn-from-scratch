@@ -47,26 +47,4 @@ model.add(CNNClass.Activation("sigmoid"))
 print("**Dense output**")
 
 model.train(train_images, train_val, batch_size =1)
-
-# model.forwardprop(img)
-
-# print("**BACKPROP**")
-# print("**Output Activation**")
-# model.layers[-1].calculate_delta_output(numpy.array([0, 1])) 
-# model.layers[-2].prev_error = model.layers[-1].passed_error.copy()
-# print("**Dense**")
-# model.layers[-2].calculate_error()
-# model.layers[-2].update_weight()
-# print("**Flatten**")
-# model.layers[-3].prev_error = model.layers[-2].passed_error.copy()
-# model.layers[-3].calculate_error()
-# print("**Pooling**")
-
-
-# print("weights after update")
-# print(model.layers[-2].weights)
-# model_output = model.final_output
-# # SIMPEN HASIL
-# model_feature_layer_output = model.feature_layer_output
-# print("CNN CLASS MODEL OUTPUT")
-# print(model_output)
+model.predict(test_images)
