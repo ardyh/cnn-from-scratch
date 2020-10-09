@@ -29,7 +29,7 @@ class Sequential:
                 
             layer.init_params(layer.input.shape)
             layer.run()
-            prev_output = layer.output
+            prev_output = layer.output.copy()
 
             # DEBUG
             if idx < self.conv_layer_final_idx:
@@ -104,9 +104,6 @@ class Conv2D:
     def init_params(self, input_shape):
         #Init Filter
         self.init_filter()
-        
-        #Apply padding
-        self.input = self.add_padding(self.input)
 
         #Initialize bias with 0
         self.filter_bias = np.zeros(self.filter.shape[0])
@@ -190,6 +187,9 @@ class Conv2D:
         
         if (self.filter_number <= 0 or self.filter_size_length <= 0 or self.filter_size_width <= 0 or self.stride <= 0 or self.padding_layer < 0) :
             raise Exception("Error input parameter")
+
+        # Add padding to input
+        self.input = self.add_padding(self.input)
 
         #Feature map formula : (W - F + 2P) / S + 1
         feature_map_shape = (((self.input.shape[0] - self.filter.shape[1] + 2 * self.padding_layer) // self.stride + 1),
@@ -352,7 +352,6 @@ class Activation:
         return 0 if (net < 0) else net
 
     def run(self):
-        input_matrix = self.input
         function_name = self.function_name
 
         # activation function defaults to relu
@@ -363,7 +362,7 @@ class Activation:
         else:
             raise Exception("Invalid activation function name")
 
-        self.output = v_activation(input_matrix)
+        self.output = v_activation(self.input)
         return None
 
     def backprop(self, error):
@@ -459,32 +458,48 @@ class Pooling:
 
         return None
 
-    def backprop(self, error):
-        #Result_shape = self.input_shape and error_shape = self.output_shape
+    def d_relu_d_out(self):
+        # Derivative of Relu over output
+        # Result_shape = self.input_shape and error_shape = self.output_shape
         result = np.zeros(self.input.shape)
 
         for channel in range(self.output.shape[-1]):
             for i in range(self.output.shape[0]):
                 for j in range(self.output.shape[1]):
-                    x_pos = self.output_position_x[i,j,channel]
-                    y_pos = self.output_position_y[i,j,channel]
-                    value = error[i,j,channel]
+                    x_pos = self.output_position_x[i, j, channel]
+                    y_pos = self.output_position_y[i, j, channel]
+                    # value = error[i, j, channel]
+                    value = self.output[i, j, channel]
 
                     result[int(x_pos), int(y_pos), channel] = value
         
         return result
+
+    def calculate_error(self):
+        d_relu_d_out = self.d_relu_d_out()
+
+        self.passed_error = np.matmul(
+            self.prev_error,
+            d_relu_d_out.reshape(d_relu_d_out.size, 1)
+        )
 
 # Flatten
 class Flatten:
     def __init__(self):
         self.input = []
         self.output = []
+        # Error calculation, backprop
+        self.prev_error = []
+        self.passed_error = []
 
     def init_params(self, input_shape):
         return None
 
+    def calculate_error(self):
+        self.passed_error = self.prev_error.copy()
+
     def run(self):
-        output_layer = self.input
+        output_layer = self.input.copy()
         self.output = np.ravel(output_layer)
         return None
 
@@ -527,13 +542,20 @@ class Dense:
         self.delta_weight = np.zeros(self.weights.shape)
 
     def calculate_error(self):
-        # calculate derived error for layer weight
-        # dNet/dweight = input
-        derived_error_net = self.input.copy()
+        # Error to be passed to previous layer
+        # dNet/dRelu = weight
+        # dError/dRelu
+        self.passed_error = np.matmul(
+            self.prev_error.reshape(1, self.prev_error.size),
+            self.weights
+        )
 
+        # calculate derived error for layer weight
+        # dNet/dWeight = input
+        # dError/dWeight
         self.error = np.matmul(
             self.prev_error.reshape(self.prev_error.size, 1),
-            derived_error_net.reshape(1, derived_error_net.size),
+            self.input.reshape(1, self.input.size),
         )
 
         # Calculate delta_weight with momentum
@@ -544,7 +566,6 @@ class Dense:
         print("self.weights_dense", self.weights, self.weights.shape)
         print("self.output_dense", self.output, self.output.shape)
         print("self.prev_error_dense", self.prev_error, self.prev_error.shape)
-        print("derived_error_net_dense", derived_error_net, derived_error_net.shape)
         print("self.error_dense", self.error, self.error.shape)
         print("self.delta_weight_dense", self.delta_weight, self.delta_weight.shape)
         # DEBUG END
