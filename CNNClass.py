@@ -241,6 +241,7 @@ class Conv2D:
         for i in range(len(self.delta_bias)):
             self.delta_bias[i] = self.learning_rate * self.error_bias[i] + self.momentum * self.delta_bias[i]
 
+
         #Calculate dE / dW (Error Weight)
         for channel in range (self.input.shape[-1]):
             for filter_num in range(error.shape[-1]):
@@ -253,9 +254,7 @@ class Conv2D:
                 for j in range (self.delta_filter.shape[2]):
                     for k in range (self.delta_filter.shape[3]):
                         self.delta_filter[filter_num,i,j,k] = self.learning_rate * self.error_filter[filter_num,i,j,k] + self.momentum * self.delta_filter[filter_num,i,j,k]
-                             
-        #Update Weight
-        # self.update_weight()
+
 
         #Calculate dE / dX (Error Input)
         error = self.add_padding(error)
@@ -280,7 +279,7 @@ class Conv2D:
             
             output_matrix[:, :, filter_num] = matrix_product
         
-        return output_matrix
+        self.passed_error = output_matrix.copy()
 
     def update_weight(self):
         #Update Bias
@@ -489,26 +488,23 @@ class Pooling:
 
     # def backprop(self, error):
     def calculate_error(self):
+        error = self.prev_error.copy()
+        
         #Result_shape = self.input_shape and error_shape = self.output_shape
         result = np.zeros(self.input.shape)
 
         for channel in range(self.output.shape[-1]):
+
             for i in range(self.output.shape[0]):
                 for j in range(self.output.shape[1]):
                     x_pos = self.output_position_x[i,j,channel]
                     y_pos = self.output_position_y[i,j,channel]
-                    # value = error[xi,j,channel]
-                    value = self.prev_error[i,j,channel]
+                    value = error[i,j,channel]
 
                     result[int(x_pos), int(y_pos), channel] = value
-        
-        # return result
+                
         self.passed_error = result.copy()   
 
-        # self.passed_error = np.matmul(
-        #     self.prev_error,
-        #     d_relu_d_out.reshape(d_relu_d_out.size, 1)
-        # )
 
     def update_weight(self):
         #No weight to be upate in pooling stage
@@ -527,7 +523,8 @@ class Flatten:
         return None
 
     def calculate_error(self):
-        self.passed_error = self.prev_error.copy()
+        error = self.prev_error.copy()
+        self.passed_error = error.reshape(self.input.shape)
 
     def update_weight(self):
         return None
