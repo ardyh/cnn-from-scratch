@@ -48,5 +48,5 @@ print("**Dense output**")
 
 model.train(train_images, train_val, epochs=10)
 pred = model.predict(test_images)
-print("Test Predictions\n", np.array(pred))
+print("Test Predictions\n", numpy.array(pred))
 print("Accuracy\n", accuracy_score(test_val, pred))

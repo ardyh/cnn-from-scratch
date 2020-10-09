@@ -1,17 +1,16 @@
 import numpy
 import matplotlib
 import matplotlib.pyplot
-import ForwardProp as numpycnn
 import CNNClass
-from utils import load_image
+from utils import load_and_resize_image
 
 BASE_IMG_DIR = "images/sandbox/"
 
 # Reading the image
-img = numpycnn.load_image(f"{BASE_IMG_DIR}cat.38.jpg")
+img = load_and_resize_image(f"{BASE_IMG_DIR}cat.38.jpg", (100,100,3))
 
 # Define model
-model = CNNClass.Sequential()
+model = CNNClass.Sequential(input_shape=(100,100,3))
 
 # Convoluting the image
 print("**Convolution Layer Start**")
@@ -55,11 +54,12 @@ print(model.layers[-2].weights)
 
 # After
 # FORWARD PROP
-model.forwardprop(img)
+model.DEBUGforwardprop(img)
 # COBA COBA
 print("**BACKPROP**")
 print("**Output Activation**")
-model.layers[-1].calculate_delta_output(numpy.array([0, 1])) 
+model.layers[-1].error_calc_input = 1
+model.layers[-1].calculate_delta_output() 
 model.layers[-2].prev_error = model.layers[-1].passed_error.copy()
 print("**Dense**")
 model.layers[-2].calculate_error()
@@ -72,10 +72,10 @@ print("**Pooling**")
 print("weights after update")
 print(model.layers[-2].weights)
 model_output = model.final_output
+print(model_output)
 # SIMPEN HASIL
 model_feature_layer_output = model.feature_layer_output
 print("CNN CLASS MODEL OUTPUT")
-print(model_output)
 
 # Showing the image output of each layer
 fig1, ax1 = matplotlib.pyplot.subplots(nrows=3, ncols = model_feature_layer_output[0].shape[2])

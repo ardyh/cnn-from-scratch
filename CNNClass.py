@@ -13,6 +13,22 @@ class Sequential:
         self.layers.append(layer)
         return None
 
+    def DEBUGforwardprop(self, X_instance):
+        # Initialize parameters for every layer
+        for layer in self.layers:
+            layer.init_params(self.input_shape)
+        prev_output = [] 
+        for idx, layer in enumerate(self.layers):
+            if idx == 0:
+                layer.input = X_instance
+            else:
+                layer.input = prev_output
+                
+            layer.run()
+            prev_output = layer.output.copy()
+        
+        self.final_output = prev_output
+
     def forwardprop(self, X_instance):
         prev_output = [] 
         for idx, layer in enumerate(self.layers):
@@ -32,8 +48,10 @@ class Sequential:
         for idx, layer in enumerate(reversed(self.layers)):
             if idx == 0: # If last layer
                 layer.error_calc_input = y_instance
+                layer.calculate_delta_output()
             else:
                 layer.prev_error = prev_error
+                layer.calculate_error()
             
             prev_error = layer.passed_error
 
@@ -111,6 +129,9 @@ class Conv2D:
         #Initialize error weight & bias
         self.error_filter = np.zeros(self.filter.shape)
         self.error_bias = np.zeros(self.filter_bias.shape)
+    
+    def reset_delta_weight(self):
+        self.delta_weight = np.zeros(self.weights.shape)
 
     def init_filter(self, input_shape):
         # Asumsi selalu 2D, maka ga butuh validasi input shape, hanya channel
@@ -282,7 +303,7 @@ class Activation:
         self.output = []
         self.function_name = function_name
         # Error calculation, backprop
-        self.error_calc_input = [] # assume it's like y_true, but it can be propagated to other layers
+        self.error_calc_input = []
         self.prev_error = []
         self.passed_error = []
         self.error = [] # harusnya gaperlu disini
@@ -290,9 +311,11 @@ class Activation:
     def init_params(self, input_shape):
         return None
 
-    def calculate_delta_output(self, y_true):
+    def calculate_delta_output(self):
         # Assuming untuk output layer
-        for y_true_val, output_val in zip(y_true, self.output):
+        class_num = 2 # Hardcoded because of binary class only
+        true_val = [1 if i == self.error_calc_input else 0 for i in range(class_num)]
+        for y_true_val, output_val in zip(true_val, self.output):
             class_error_term = 0
             if (self.function_name == "sigmoid"):
                 # Buat hidden tinggal ambil term: output_val * (1 - output_val) 
@@ -307,10 +330,6 @@ class Activation:
             self.passed_error.append(class_error_term) 
         
         self.passed_error = np.array(self.passed_error)
-
-        # DEBUG
-        print("self.output_act", self.output)
-        print("self.passed_error_act", self.passed_error)
     
     # Assumption only works for layers where output dimension of next layer is equal to activation layer's input dimension
     def calculate_error(self):
@@ -543,11 +562,10 @@ class Dense:
 
         # Init weight
         input_size = 1
-        for shape in input_shape:
-            input_size *= shape
-        self.weights = np.random.uniform(-1, 1, (class_num, input_size + 1)) # +1 for bias
-        
-        self.reset_delta_weight()
+        # for shape in input_shape:
+        #     input_size *= shape
+        # self.weights = np.random.uniform(-1, 1, (class_num, input_size + 1)) # +1 for bias
+        # self.reset_delta_weight()
 
         return None
 
@@ -562,6 +580,10 @@ class Dense:
             self.prev_error.reshape(1, self.prev_error.size),
             self.weights
         )
+
+        print("prev_error", self.prev_error.shape)
+        print("weights", self.weights.shape)
+        print("weights", self.input.shape)
 
         # calculate derived error for layer weight
         # dNet/dWeight = input
@@ -582,6 +604,12 @@ class Dense:
     def run(self):
         # Init variables
         self.input = np.append(self.input, self.bias) # Append bias to input. Assumption: input is already flattened
+        
+        # Init weight if first forwardprop
+        if self.weights == []:
+            self.weights = np.random.uniform(-1, 1, (self.class_num, self.input.size))
+            self.reset_delta_weight()
+
         class_num = self.class_num
         input_size = self.input.size
         self.output = np.zeros(class_num)
