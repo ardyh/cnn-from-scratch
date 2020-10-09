@@ -234,7 +234,7 @@ class Conv2D:
 
 
         #Update Weight
-        self.updateweight()
+        # self.update_weight()
 
 
         #Calculate dE / dX (Error Input)
@@ -252,17 +252,17 @@ class Conv2D:
             current_filter = self.filter[filter_num, :]
 
             if len(current_filter.shape) > 2:
-                matrix_product = self.convolution_calculation(self.error[:, :, 0], current_filter[:, :, 0], self.padding_layer, self.stride)
+                matrix_product = self.convolution_calculation(error[:, :, 0], current_filter[:, :, 0], self.padding_layer, self.stride)
                 for channel in range(1, current_filter.shape[-1]):
-                    matrix_product = matrix_product + self.convolution_calculation(self.error[:, :, channel], current_filter[:, :, channel], self.padding_layer, self.stride)
+                    matrix_product = matrix_product + self.convolution_calculation(error[:, :, channel], current_filter[:, :, channel], self.padding_layer, self.stride)
             else:
-                matrix_product = self.convolution_calculation(self.error, current_filter, self.padding_layer, self.stride)
+                matrix_product = self.convolution_calculation(error[:,:,filter_num], current_filter, self.padding_layer, self.stride)
             
             output_matrix[:, :, filter_num] = matrix_product
         
         return output_matrix
 
-    def updateweight(self):
+    def update_weight(self):
         #Update Bias
         for i in range(len(self.delta_bias)):
             self.delta_bias[i] = self.learning_rate * self.error_bias[i] + self.momentum * self.delta_bias[i]
@@ -384,6 +384,10 @@ class Activation:
         
         return result
 
+    def update_weight(self):
+        #No weight to be upate in detection stage
+        return None
+
 # Pooling Layer
 class Pooling:
     def __init__(self, pool_length, pool_width, stride=2, mode='max'):
@@ -488,6 +492,10 @@ class Pooling:
             self.prev_error,
             d_relu_d_out.reshape(d_relu_d_out.size, 1)
         )
+
+    def update_weight(self):
+        #No weight to be upate in pooling stage
+        return None
 
 # Flatten
 class Flatten:
