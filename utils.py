@@ -1,4 +1,6 @@
 import os
+import skimage.io
+from skimage.transform import resize
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
@@ -29,7 +31,7 @@ def k_fold_cross_val(model, X, y, k=10):
     history = []
     kfold = KFold(n_splits=k)
 
-    for i, (train_idx, test_idx) in enumerate(kfold.split(X))
+    for i, (train_idx, test_idx) in enumerate(kfold.split(X)):
         print(f"Fold #{i}")
         X_train, y_train = X[train_idx], y[train_idx]
         X_test, y_test = X[test_idx], y[test_idx]
@@ -50,7 +52,7 @@ def k_fold_cross_val(model, X, y, k=10):
 def load_image(image_path):
     try:
         raw_img = skimage.io.imread(image_path)
-        raw_img = skimage.transform.resize(raw_img,(100,100))
+        raw_img = resize(raw_img,(100,100))
     except:
         raise Exception("Failed to load image")
 

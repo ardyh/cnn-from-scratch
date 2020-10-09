@@ -1,4 +1,3 @@
-import skimage.data
 import numpy
 import matplotlib
 import matplotlib.pyplot

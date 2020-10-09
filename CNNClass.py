@@ -1,5 +1,4 @@
 import numpy as np
-import skimage.io
 from utils import load_image
 
 class Sequential:
