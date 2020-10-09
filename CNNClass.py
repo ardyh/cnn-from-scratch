@@ -286,7 +286,7 @@ class Conv2D:
         #Update Bias
         for i in range(len(self.delta_bias)):
             # self.delta_bias[i] = self.learning_rate * self.error_bias[i] + self.momentum * self.delta_bias[i]
-            self.filter_bias[i] -= self.delta_bias[i]
+            self.filter_bias[i] -= self.delta_bias[i]  
 
         #Update weight
         for filter_num in range(self.delta_filter.shape[0]):
@@ -295,6 +295,9 @@ class Conv2D:
                     for k in range (self.delta_filter.shape[3]):
                         # self.delta_filter[filter_num,i,j,k] = self.learning_rate * self.error_filter[filter_num,i,j,k] + self.momentum * self.delta_filter[filter_num,i,j,k]
                         self.filter[filter_num,i,j,k] -= self.delta_filter[filter_num,i,j,k]
+
+        self.delta_filter = np.zeros(self.filter.shape)
+        self.delta_bias = np.zeros(self.filter_bias.shape)
 
 # Activation
 class Activation:
@@ -607,6 +610,7 @@ class Dense:
     def update_weight(self):
         # Assumption: weight(n) = weight(n-1) - lr * delta_weight(n-1)
         self.weights = self.weights - self.learning_rate * self.delta_weight
+        self.reset_delta_weight()
 
     def run(self):
         # Init variables

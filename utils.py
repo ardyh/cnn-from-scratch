@@ -39,14 +39,14 @@ def k_fold_cross_val(model, X, y, input_shape, k=10):
         X_test = X[test_idx]
         y_test = y[test_idx]
 
-        model.train(X_train, y_train, epochs=6)
+        model.train(X_train, y_train, epochs=4)
         preds = model.predict(X_test)
 
         history.append({
-            'accuracy': accuracy_score(y, preds),
-            'f1': f1_score(y, preds),
-            'precision': precision_score(y, preds),
-            'recall': recall_score(y, preds),
+            'accuracy': accuracy_score(y_test, preds),
+            'f1': f1_score(y_test, preds),
+            'precision': precision_score(y_test, preds),
+            'recall': recall_score(y_test, preds),
         })
 
         i+=1

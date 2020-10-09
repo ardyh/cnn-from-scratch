@@ -1,4 +1,6 @@
 import numpy as np
+import pickle
+import pandas as pd
 import matplotlib
 import matplotlib.pyplot
 import CNNClass
@@ -51,9 +53,10 @@ model.add(CNNClass.Dense(2))
 model.add(CNNClass.Activation("sigmoid", class_num=2))
 print("**Dense output**")
 
-# model.train(train_images, train_val, epochs=30)
+# model.train(train_images, train_val, epochs=10)
 # pred = model.predict(test_images)
 # print("Test Predictions\n", np.array(pred))
+# pd.DataFrame(pred).to_csv("pred.csv")
 # print("Accuracy\n", accuracy_score(test_val, pred))
 
 # KFold Cross validation
