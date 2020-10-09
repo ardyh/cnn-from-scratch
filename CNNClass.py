@@ -1,5 +1,6 @@
 import numpy as np
 import skimage.io
+from utils import load_image
 
 class Sequential:
     def __init__(self, n_epoch=50, learning_rate=0.5, momentum=0.1):
@@ -569,13 +570,4 @@ class Dense:
 
     def backward(self):
         pass
-
-def load_image(image_path):
-    try:
-        raw_img = skimage.io.imread(image_path)
-        raw_img = skimage.transform.resize(raw_img,(100,100))
-    except:
-        raise Exception("Failed to load image")
-
-    return raw_img
 

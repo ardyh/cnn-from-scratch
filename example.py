@@ -4,6 +4,7 @@ import matplotlib
 import matplotlib.pyplot
 import ForwardProp as numpycnn
 import CNNClass
+from utils import load_image
 
 BASE_IMG_DIR = "images/sandbox/"
 

@@ -1,13 +1,7 @@
 import numpy as np
 import skimage.io
+from utils import load_image
 
-def load_image(image_path):
-    try:
-        raw_img = skimage.io.imread(image_path)
-    except:
-        raise Exception("Failed to load image")
-
-    return raw_img
 
 def add_padding(input_matrix, padding_layer, padding_number):
     if (len(input_matrix.shape) > 2):
