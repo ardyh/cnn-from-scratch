@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot
 import CNNClass
-from utils import load_and_resize_image, get_data, cross_val, k_fold_cross_val
+from utils import load_and_resize_image, get_data, k_fold_cross_val
 from sklearn.metrics import accuracy_score
 
 TRAIN_DIR = "images/train"

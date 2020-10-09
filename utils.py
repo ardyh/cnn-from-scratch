@@ -45,7 +45,7 @@ def k_fold_cross_val(model, X, y, k=10):
         for img in X_test:
             test_images.append(load_and_resize_image(img, INPUT_SHAPE))
 
-        model.fit(X_train, y_train)
+        model.train(X_train, y_train, epochs=5)
         preds = model.predict(X_test)
 
         history.append({
