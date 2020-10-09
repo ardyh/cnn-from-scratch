@@ -469,19 +469,21 @@ class Pooling:
 
     # def backprop(self, error):
     def calculate_error(self):
+        error = self.prev_error.copy()
+        
         #Result_shape = self.input_shape and error_shape = self.output_shape
         result = np.zeros(self.input.shape)
 
         for channel in range(self.output.shape[-1]):
+
             for i in range(self.output.shape[0]):
                 for j in range(self.output.shape[1]):
                     x_pos = self.output_position_x[i,j,channel]
                     y_pos = self.output_position_y[i,j,channel]
-                    # value = error[xi,j,channel]
-                    value = self.prev_error[i,j,channel]
+                    value = error[i,j,channel]
 
                     result[int(x_pos), int(y_pos), channel] = value
-        
+                
         self.passed_error = result.copy()   
 
 
