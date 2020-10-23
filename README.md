@@ -1,5 +1,5 @@
-# CNN Forward Propagation
-CNN Forward Propagation Implementation in Python
+# CNN
+CNN Implementation with Numpy in Python
 <br>
 
 ## Installation
