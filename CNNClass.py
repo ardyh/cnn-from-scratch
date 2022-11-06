@@ -13,22 +13,6 @@ class Sequential:
         self.layers.append(layer)
         return None
 
-    def DEBUGforwardprop(self, X_instance):
-        # Initialize parameters for every layer
-        for layer in self.layers:
-            layer.init_params(self.input_shape)
-        prev_output = [] 
-        for idx, layer in enumerate(self.layers):
-            if idx == 0:
-                layer.input = X_instance
-            else:
-                layer.input = prev_output
-                
-            layer.run()
-            prev_output = layer.output.copy()
-        
-        self.final_output = prev_output
-
     def forwardprop(self, X_instance):
         prev_output = [] 
         for idx, layer in enumerate(self.layers):
@@ -116,17 +100,17 @@ class Conv2D:
         self.momentum = momentum
 
     def init_params(self, input_shape):
-        #Init Filter
+        # initialize filter
         self.init_filter(input_shape)
 
-        #Initialize bias with 0
+        # initial bias with 0
         self.filter_bias = np.zeros(self.filter.shape[0])
 
-        #Initialize delta weight & bias
+        # initialize delta weight and bias with 0
         self.delta_filter = np.zeros(self.filter.shape)
         self.delta_bias = np.zeros(self.filter_bias.shape)
 
-        #Initialize error weight & bias
+        # initialize delta weight and bias with 0
         self.error_filter = np.zeros(self.filter.shape)
         self.error_bias = np.zeros(self.filter_bias.shape)
     
@@ -134,7 +118,7 @@ class Conv2D:
         self.delta_weight = np.zeros(self.weights.shape)
 
     def init_filter(self, input_shape):
-        # Asumsi selalu 2D, maka ga butuh validasi input shape, hanya channel
+        # we assume image only 2D, so only channel validation is needed
         # set the lower and upper bound of randomized parameters to be intialized in filter
         LOWER_BOUND = -10
         UPPER_BOUND = 10
@@ -150,7 +134,7 @@ class Conv2D:
 
     def add_padding(self, input_matrix):
         if (len(input_matrix.shape) > 2):
-            #Initialize matrix result
+            # initialize result matrix
             padded_result = np.zeros((input_matrix.shape[0] + self.padding_layer * 2, 
                                     input_matrix.shape[1] + self.padding_layer * 2,
                                     input_matrix.shape[-1]))
@@ -167,7 +151,7 @@ class Conv2D:
     def convolution_calculation(self, input_matrix, conv_filter, stride_x, stride_y):
         #input_matrix shape = (mxn)
 
-        #Initialize matrix result
+        # initialize result matrix
         output_shape = (((input_matrix.shape[0] - conv_filter.shape[0]) // stride_x + 1),
                         ((input_matrix.shape[1] - conv_filter.shape[1]) // stride_y + 1))
         output_matrix = np.zeros(output_shape)
@@ -189,30 +173,29 @@ class Conv2D:
 
                 input_width_idx += stride_y
                 output_width_idx +=  1
-            #End while
+            
             input_length_idx += stride_x
             output_length_idx += 1
-        #End while
 
         return output_matrix
 
     def run(self):
-        #Stage Validation
+        # validation
         if (len(self.input.shape) < 2):
             raise Exception("Invalid input matrix")
         
         if (self.filter_number <= 0 or self.filter_size_length <= 0 or self.filter_size_width <= 0 or self.stride <= 0 or self.padding_layer < 0) :
             raise Exception("Error input parameter")
 
-        # Add padding to input
+        # add padding to input
         self.input = self.add_padding(self.input)
 
-        #Feature map formula : (W - F + 2P) / S + 1
+        # feature map formula : (W - F + 2P) / S + 1
         feature_map_shape = (((self.input.shape[0] - self.filter.shape[1]) // self.stride + 1),
                             ((self.input.shape[1] - self.filter.shape[2]) // self.stride + 1),
                             self.filter_number)
         
-        # Initialize feature map output
+        # initialize feature map output
         feature_map = np.zeros(feature_map_shape)
 
         for filter_num in range(self.filter.shape[0]):
@@ -230,20 +213,19 @@ class Conv2D:
         self.output = feature_map
         return None
 
-    # def backprop(self, error):
     def calculate_error(self):
-        #Calculate error bias 
+        # calculate bias error 
         error = self.prev_error.copy() # Line tambahan, kalo ntar error coba debug ini
         for i in range (error.shape[-1]):
             self.error_bias[i] = np.sum(error[:,:,i])
         
-        # Update delta bias
+        # update delta bias
         for i in range(len(self.delta_bias)):
             self.delta_bias[i] = self.learning_rate * self.error_bias[i] + self.momentum * self.delta_bias[i]
 
 
-        # Calculate dE / dW (Error Weight)
-        # asumsi simetris input dan filternya
+        # calculate dE / dW (Error Weight)
+        # assuming filter and input are symmetrical
         calculated_stride_x = (self.input.shape[0] - error.shape[0]) // (self.filter.shape[1] - 1)
         calculated_stride_y = (self.input.shape[1] - error.shape[0]) // (self.filter.shape[2] - 1)
         for channel in range (self.input.shape[-1]):
@@ -258,38 +240,13 @@ class Conv2D:
                     for k in range (self.delta_filter.shape[3]):
                         self.delta_filter[filter_num,i,j,k] = self.learning_rate * self.error_filter[filter_num,i,j,k] + self.momentum * self.delta_filter[filter_num,i,j,k]
 
-        # #Calculate dE / dX (Error Input)
-        # error = self.add_padding(error)
-
-        # #Output matrix formula : (W - F + 2P) / S + 1
-        # output_matrix_shape = (((error.shape[0] - self.filter.shape[1] + 2 * self.padding_layer) // self.stride + 1),
-        #                     ((error.shape[1] - self.filter.shape[2] + 2 * self.padding_layer) // self.stride + 1),
-        #                     self.filter_number)
-        
-        # # Initialize Output matrix output
-        # output_matrix = np.zeros(output_matrix_shape)
-
-        # for filter_num in range(self.filter.shape[0]):
-        #     current_filter = self.filter[filter_num, :]
-
-        #     if len(current_filter.shape) > 2:
-        #         matrix_product = self.convolution_calculation(error[:, :, 0], current_filter[:, :, 0], self.stride, self.stride)
-        #         for channel in range(1, current_filter.shape[-1]):
-        #             matrix_product = matrix_product + self.convolution_calculation(error[:, :, channel], current_filter[:, :, channel], self.stride, self.stride)
-        #     else:
-        #         matrix_product = self.convolution_calculation(error[:,:,filter_num], current_filter, self.stride, self.stride)
-            
-        #     output_matrix[:, :, filter_num] = matrix_product
-        
-        # self.passed_error = output_matrix.copy()
-
     def update_weight(self):
-        #Update Bias
+        # bias update
         for i in range(len(self.delta_bias)):
             # self.delta_bias[i] = self.learning_rate * self.error_bias[i] + self.momentum * self.delta_bias[i]
             self.filter_bias[i] -= self.delta_bias[i]  
 
-        #Update weight
+        # weight update
         for filter_num in range(self.delta_filter.shape[0]):
             for i in range (self.delta_filter.shape[1]):
                 for j in range (self.delta_filter.shape[2]):
@@ -311,7 +268,7 @@ class Activation:
         self.error_calc_input = []
         self.prev_error = []
         self.passed_error = []
-        self.error = [] # harusnya gaperlu disini
+        self.error = [] 
 
     def init_params(self, input_shape):
         return None
@@ -324,10 +281,8 @@ class Activation:
             
             class_error_term = 0
             if (self.function_name == "sigmoid"):
-                # Buat hidden tinggal ambil term: output_val * (1 - output_val) 
                 class_error_term = (y_true_val - output_val) * output_val * (1 - output_val) 
             elif (self.function_name == "relu"):
-                # Buat hidden tinggal ambil term: relu_derivative_val
                 relu_derivative_val = 1 if output_val > 0 else 0
                 class_error_term = (y_true_val - output_val) * relu_derivative_val
             else:
@@ -339,16 +294,6 @@ class Activation:
     
     # Assumption only works for layers where output dimension of next layer is equal to activation layer's input dimension
     def calculate_error(self):
-        # activation function defaults to relu
-        # if (self.function_name == "sigmoid"):
-        #     v_activation = np.vectorize(self.d_sigmoid)
-        # elif (self.function_name == "relu"):
-        #     v_activation = np.vectorize(self.d_relu)
-        # else:
-        #     raise Exception("Invalid activation function name")
-
-        # self.passed_error = v_activation(self.prev_error)
-
         result = np.zeros(self.output.shape)
 
         for channel in range(self.output.shape[-1]):
@@ -361,19 +306,6 @@ class Activation:
         
         self.passed_error = result.copy()
         
-        # Asumsi: 
-        #     - error dikali dari yang paling dekat output layer dulu
-        #     - prev_error = error layer2 sebelumnya; jika di-iterasi mulai output layer 
-        # Maka: delta = prev_error * curr_error; 
-        
-        # Cari dimensi yang sama dari prev_error
-        # if (self.prev_error.shape[1] == curr_error.shape[0]): #n_col(prev_error) == n_rows(curr_error), langsung kali
-        #     self.error = np.matmul(self.prev_error, curr_error)
-        # elif (self.prev_error.shape[1] != curr_error.shape[0]): # Kalo n_col(prev_error) != n_rows(curr_error), transpose
-        #     self.error = np.matmul(self.prev_error, curr_error.transpose())
-        # else: # if no intersection
-        #     raise Exception("Cannot do matrix multiplication. No intersecting dimensions")
-
         return None
 
     def d_sigmoid(self, out):
@@ -504,11 +436,10 @@ class Pooling:
 
         return None
 
-    # def backprop(self, error):
     def calculate_error(self):
         error = self.prev_error.copy()
         
-        #Result_shape = self.input_shape and error_shape = self.output_shape
+        # Result_shape = self.input_shape and error_shape = self.output_shape
         result = np.zeros(self.input.shape)
 
         for channel in range(self.output.shape[-1]):
@@ -525,7 +456,7 @@ class Pooling:
 
 
     def update_weight(self):
-        #No weight to be upate in pooling stage
+        # No weight to be updated in pooling stage
         return None
 
 # Flatten
